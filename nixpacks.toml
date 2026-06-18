@@ -1,2 +1,11 @@
 [phases.setup]
 nixPkgs = ["nodejs_20", "ffmpeg"]
+
+[phases.install]
+cmds = ["npm ci --include=dev"]
+
+[phases.build]
+cmds = ["echo 'worker: pulando next build'"]
+
+[start]
+cmd = "npm run worker"
