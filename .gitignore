@@ -8,6 +8,7 @@ build/
 .next/
 next-env.d.ts
 .vercel/
+*.tsbuildinfo
 .vscode/
 .idea/
 google-service-account.json
