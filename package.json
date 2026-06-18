@@ -1,0 +1,50 @@
+{
+  "name": "swell-distribuidor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agente de distribuição social da Swell Filmes — classifica, gera copy, espera aprovação e publica via Zernio.",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 4488",
+    "build": "next build",
+    "start": "next start -p 4488",
+    "distribuir": "tsx src/index.ts",
+    "worker": "tsx worker/index.ts",
+    "typecheck": "tsc --noEmit",
+    "db:push": "drizzle-kit push --force",
+    "db:migrate-swell": "tsx scripts/migrate-swell-tenant.ts",
+    "r2:setup-cors": "tsx scripts/setup-r2-cors.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/s3-request-presigner": "^3.1072.0",
+    "@clerk/nextjs": "^7.5.5",
+    "@neondatabase/serverless": "^1.1.0",
+    "@notionhq/client": "^2.2.15",
+    "@zernio/node": "^0.2.247",
+    "croner": "^10.0.1",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.45.2",
+    "mime-types": "^2.1.35",
+    "next": "^16.2.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/mime-types": "^2.1.4",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.5.0",
+    "drizzle-kit": "^0.31.10",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.19",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

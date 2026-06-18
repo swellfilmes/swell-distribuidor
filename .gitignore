@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.local
+*.log
+.DS_Store
+dist/
+build/
+.next/
+next-env.d.ts
+.vercel/
+.vscode/
+.idea/
+google-service-account.json
+*.pem
+*.key
+*.mp4
+*.mov

@@ -1,0 +1,89 @@
+import { eq } from 'drizzle-orm';
+import { db } from './index';
+import { empresas, tenantSecrets } from './schema';
+import { decifrar } from './encryption';
+import type { TenantConfig } from '../config';
+
+const cache = new Map<string, TenantConfig>();
+
+/** Carrega config de uma empresa pelo slug (ex: 'swell'). Faz cache em memória. */
+export async function loadTenantConfig(slug: string): Promise<TenantConfig> {
+  const hit = cache.get(slug);
+  if (hit) return hit;
+
+  const linhas = await db
+    .select()
+    .from(empresas)
+    .innerJoin(tenantSecrets, eq(empresas.id, tenantSecrets.empresaId))
+    .where(eq(empresas.slug, slug))
+    .limit(1);
+
+  if (linhas.length === 0) {
+    throw new Error(
+      `Empresa com slug "${slug}" não encontrada no banco. ` +
+        `Rode "npm run distribuir -- --listar-empresas" pra ver as disponíveis ` +
+        `ou "tsx scripts/migrate-swell-tenant.ts" pra criar o tenant Swell a partir do .env.`,
+    );
+  }
+
+  const { empresas: e, tenant_secrets: s } = linhas[0];
+
+  const cfg: TenantConfig = {
+    empresaId: e.id,
+    slug: e.slug,
+    nome: e.nome,
+    notionApiKey: decifrar(s.notionApiKeyEncrypted),
+    notionDbId: s.notionDbId,
+    zernioApiKey: decifrar(s.zernioApiKeyEncrypted),
+    zernioYoutubeAccountId: s.zernioYoutubeAccountId ?? undefined,
+    zernioInstagramAccountId: s.zernioInstagramAccountId ?? undefined,
+    zernioTiktokAccountId: s.zernioTiktokAccountId ?? undefined,
+    zernioLinkedinAccountId: s.zernioLinkedinAccountId ?? undefined,
+  };
+
+  cache.set(slug, cfg);
+  return cfg;
+}
+
+/** Carrega config de uma empresa pelo id numérico (worker/crons). */
+export async function loadTenantConfigById(empresaId: number): Promise<TenantConfig> {
+  const linhas = await db
+    .select()
+    .from(empresas)
+    .innerJoin(tenantSecrets, eq(empresas.id, tenantSecrets.empresaId))
+    .where(eq(empresas.id, empresaId))
+    .limit(1);
+  if (linhas.length === 0) {
+    throw new Error(`Empresa id=${empresaId} não encontrada.`);
+  }
+  const { empresas: e, tenant_secrets: s } = linhas[0];
+  return {
+    empresaId: e.id,
+    slug: e.slug,
+    nome: e.nome,
+    notionApiKey: decifrar(s.notionApiKeyEncrypted),
+    notionDbId: s.notionDbId,
+    zernioApiKey: decifrar(s.zernioApiKeyEncrypted),
+    zernioYoutubeAccountId: s.zernioYoutubeAccountId ?? undefined,
+    zernioInstagramAccountId: s.zernioInstagramAccountId ?? undefined,
+    zernioTiktokAccountId: s.zernioTiktokAccountId ?? undefined,
+    zernioLinkedinAccountId: s.zernioLinkedinAccountId ?? undefined,
+  };
+}
+
+/** Lista todas as empresas ativas (pra crons multi-tenant). */
+export async function listarEmpresasAtivas(): Promise<
+  Array<{ id: number; slug: string; nome: string }>
+> {
+  const linhas = await db
+    .select({ id: empresas.id, slug: empresas.slug, nome: empresas.nome })
+    .from(empresas)
+    .where(eq(empresas.ativo, true));
+  return linhas;
+}
+
+/** Limpa cache (usar quando admin atualiza chaves de uma empresa). */
+export function invalidarCache(slug?: string): void {
+  if (slug) cache.delete(slug);
+  else cache.clear();
+}
