@@ -131,8 +131,8 @@ function registrarCrons() {
     }
   });
 
-  // atualizar-pendentes: diariamente às 12:00
-  new Cron('0 12 * * *', { timezone: TIMEZONE, protect: true }, async () => {
+  // atualizar-pendentes: a cada 15min (inclui transição Agendado → Publicado)
+  new Cron('*/15 * * * *', { timezone: TIMEZONE, protect: true }, async () => {
     try {
       await atualizarPendentesTodas();
     } catch (err) {
@@ -140,7 +140,7 @@ function registrarCrons() {
     }
   });
 
-  log('', 'cron', '✅ schedules ativos: publicar (*/5min) · sincronizar (*/10min) · atualizar (12h)');
+  log('', 'cron', '✅ schedules ativos: publicar (*/5min) · sincronizar (*/10min) · atualizar (*/15min)');
 }
 
 async function main() {

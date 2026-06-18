@@ -107,7 +107,34 @@ export const jobs = pgTable(
   }),
 );
 
+/**
+ * Convites pendentes: admin convida email X pra empresa Y. Quando X cria conta
+ * Clerk e loga pela primeira vez, a sync busca convites por email e cria a
+ * membership automaticamente.
+ */
+export const convites = pgTable(
+  'convites',
+  {
+    id: serial('id').primaryKey(),
+    empresaId: integer('empresa_id')
+      .notNull()
+      .references(() => empresas.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    role: text('role').notNull().default('editor'),
+    criadoPor: text('criado_por')
+      .notNull()
+      .references(() => users.id, { onDelete: 'set null' }),
+    criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
+    consumidoEm: timestamp('consumido_em', { withTimezone: true }),
+  },
+  (t) => ({
+    emailIdx: index('convites_email_idx').on(t.email),
+  }),
+);
+
 export type Empresa = typeof empresas.$inferSelect;
 export type TenantSecretsRow = typeof tenantSecrets.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
 export type NovoJob = typeof jobs.$inferInsert;
+export type Convite = typeof convites.$inferSelect;
+export type NovoConvite = typeof convites.$inferInsert;

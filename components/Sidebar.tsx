@@ -10,8 +10,15 @@ const itens = [
   { href: '/app/configuracoes', label: 'Configurações', match: /^\/app\/configuracoes/ },
 ];
 
-export function Sidebar() {
+interface Props {
+  isAdmin?: boolean;
+}
+
+export function Sidebar({ isAdmin = false }: Props) {
   const pathname = usePathname();
+  const todosItens = isAdmin
+    ? [...itens, { href: '/app/admin', label: 'Admin · Empresas', match: /^\/app\/admin/ }]
+    : itens;
 
   return (
     <aside className="hidden w-56 shrink-0 border-r border-ink/10 bg-cream/50 px-4 py-6 md:block">
@@ -19,7 +26,7 @@ export function Sidebar() {
         Swell
       </div>
       <nav className="space-y-1">
-        {itens.map((item) => {
+        {todosItens.map((item) => {
           const ativo = item.match.test(pathname);
           return (
             <Link

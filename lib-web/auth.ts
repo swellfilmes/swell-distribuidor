@@ -1,7 +1,7 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull, sql } from 'drizzle-orm';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/src/db/index';
-import { users, empresas, empresaUsers } from '@/src/db/schema';
+import { users, empresas, empresaUsers, convites } from '@/src/db/schema';
 
 export interface UsuarioApp {
   id: string;
@@ -19,8 +19,9 @@ export interface EmpresaResumo {
 
 /**
  * Garante que o usuário do Clerk está espelhado no nosso `users`.
- * Se o email bater com SWELL_ADMIN_EMAIL, vira admin e ganha
- * membership 'owner' na empresa Swell automaticamente.
+ * - Se o email bater com SWELL_ADMIN_EMAIL, vira admin e ganha
+ *   membership 'owner' na empresa Swell.
+ * - Consome convites pendentes (email match) criando memberships.
  */
 export async function syncUsuarioAtual(): Promise<UsuarioApp | null> {
   const { userId } = await auth();
@@ -34,13 +35,14 @@ export async function syncUsuarioAtual(): Promise<UsuarioApp | null> {
     throw new Error('Usuário Clerk sem email — não consigo sincronizar.');
   }
 
+  const emailLower = email.toLowerCase().trim();
   const nome =
     [clerk.firstName, clerk.lastName].filter(Boolean).join(' ').trim() ||
     clerk.username ||
     null;
 
   const adminEmail = process.env.SWELL_ADMIN_EMAIL?.toLowerCase().trim();
-  const isAdmin = !!adminEmail && email.toLowerCase().trim() === adminEmail;
+  const isAdmin = !!adminEmail && emailLower === adminEmail;
   const role: 'admin' | 'member' = isAdmin ? 'admin' : 'member';
 
   // Upsert do usuário
@@ -52,7 +54,7 @@ export async function syncUsuarioAtual(): Promise<UsuarioApp | null> {
       set: { email, nome, role },
     });
 
-  // Se for admin, garante membership na Swell como 'owner'
+  // Admin → garante membership na Swell como 'owner'
   if (isAdmin) {
     const swell = await db
       .select({ id: empresas.id })
@@ -60,12 +62,32 @@ export async function syncUsuarioAtual(): Promise<UsuarioApp | null> {
       .where(eq(empresas.slug, 'swell'))
       .limit(1);
     if (swell.length > 0) {
-      const empresaId = swell[0].id;
       await db
         .insert(empresaUsers)
-        .values({ empresaId, userId, role: 'owner' })
+        .values({ empresaId: swell[0].id, userId, role: 'owner' })
         .onConflictDoNothing();
     }
+  }
+
+  // Consome convites pendentes (case-insensitive)
+  const pendentes = await db
+    .select()
+    .from(convites)
+    .where(
+      and(
+        sql`lower(${convites.email}) = ${emailLower}`,
+        isNull(convites.consumidoEm),
+      ),
+    );
+  for (const c of pendentes) {
+    await db
+      .insert(empresaUsers)
+      .values({ empresaId: c.empresaId, userId, role: c.role })
+      .onConflictDoNothing();
+    await db
+      .update(convites)
+      .set({ consumidoEm: new Date() })
+      .where(eq(convites.id, c.id));
   }
 
   return { id: userId, email, nome, role };
@@ -105,4 +127,12 @@ export async function exigirAcessoEmpresa(slug: string): Promise<EmpresaResumo> 
     );
   }
   return e;
+}
+
+/** Garante que o usuário logado é admin. Lança 403-like se não for. */
+export async function exigirAdmin(): Promise<UsuarioApp> {
+  const user = await syncUsuarioAtual();
+  if (!user) throw new Error('Não autenticado.');
+  if (user.role !== 'admin') throw new Error('Apenas admin pode acessar isso.');
+  return user;
 }

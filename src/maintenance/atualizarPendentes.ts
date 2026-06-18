@@ -3,7 +3,9 @@ import { registrarResultado } from '../log/notion';
 import type { TenantConfig } from '../config';
 import type { Rede, ResultadoPublicacao } from '../types';
 
-const STATUS_PRA_REVISAR = ['Publicado parcial', 'Pendente Zernio'];
+// Inclui 'Agendado' pra detectar transição Agendado → Publicado (Zernio publica
+// sozinho na hora marcada — sem isso, fica "Agendado" pra sempre no Notion).
+const STATUS_PRA_REVISAR = ['Publicado parcial', 'Pendente Zernio', 'Agendado'];
 
 const REDES: readonly Rede[] = ['youtube', 'instagram', 'tiktok', 'linkedin'];
 

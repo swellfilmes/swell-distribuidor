@@ -29,7 +29,8 @@ const origens = [
   'http://localhost:3001',
   'http://localhost:4488',
   'http://localhost:8080',
-  // adicione aqui o domínio do Vercel quando deploy: https://swell-distribuidor.vercel.app
+  'https://project-42hj6.vercel.app',
+  'https://swell-distribuidor-git-main-swell-filmes.vercel.app',
 ];
 
 async function main() {

@@ -19,7 +19,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar isAdmin={user.role === 'admin'} />
       <div className="flex flex-1 flex-col">
         <TopBar
           empresas={empresas.map((e) => ({ slug: e.slug, nome: e.nome }))}

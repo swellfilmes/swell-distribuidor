@@ -6,6 +6,7 @@ import { StatusBadge, RedeBadge } from './StatusBadge';
 import { InlineStatusEdit } from './InlineStatusEdit';
 import { InlineDateEdit } from './InlineDateEdit';
 import { PostDetailDrawer } from './PostDetailDrawer';
+import { CalendarView } from './CalendarView';
 import { formatarDataHora, tempoRelativo } from '@/lib-web/format';
 import {
   STATUS_VALORES,
@@ -55,6 +56,22 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
   const [pendentes, setPendentes] = useState<Set<string>>(new Set());
   const [erros, setErros] = useState<Map<string, string>>(new Map());
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'tabela' | 'calendario'>(
+    (searchParams.get('view') as 'tabela' | 'calendario') ?? 'tabela',
+  );
+
+  function trocarView(novo: 'tabela' | 'calendario') {
+    setViewMode(novo);
+    const sp = new URLSearchParams(searchParams.toString());
+    if (novo === 'calendario') sp.set('view', 'calendario');
+    else sp.delete('view');
+    // troca o mês default se entrando no calendário sem mês
+    if (novo === 'calendario' && !sp.get('mes')) {
+      const h = new Date();
+      sp.set('mes', `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}`);
+    }
+    router.push(`${pathname}?${sp.toString()}`);
+  }
 
   useEffect(() => {
     setPosts(postsServer);
@@ -162,8 +179,41 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
     Boolean(filtros.tipo) ||
     (filtros.redes && filtros.redes.length > 0);
 
+  const mesAtivo =
+    filtros.mes ??
+    (() => {
+      const h = new Date();
+      return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}`;
+    })();
+
   return (
     <>
+      {/* Toggle de view */}
+      <div className="mb-3 inline-flex overflow-hidden rounded-md border border-ink/15">
+        <button
+          onClick={() => trocarView('tabela')}
+          className={
+            'px-3 py-1.5 text-sm ' +
+            (viewMode === 'tabela'
+              ? 'bg-ink text-cream'
+              : 'bg-white text-ink/70 hover:bg-ink/5')
+          }
+        >
+          Tabela
+        </button>
+        <button
+          onClick={() => trocarView('calendario')}
+          className={
+            'border-l border-ink/15 px-3 py-1.5 text-sm ' +
+            (viewMode === 'calendario'
+              ? 'bg-ink text-cream'
+              : 'bg-white text-ink/70 hover:bg-ink/5')
+          }
+        >
+          Calendário
+        </button>
+      </div>
+
       {/* Filtros */}
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-ink/10 bg-white p-3">
         <FiltroSelect
@@ -249,7 +299,17 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
         </div>
       </div>
 
+      {viewMode === 'calendario' && (
+        <CalendarView
+          posts={posts}
+          mes={mesAtivo}
+          onMesChange={(novo) => setFiltro('mes', novo)}
+          onSelecionar={(p) => setSelecionadoId(p.pageId)}
+        />
+      )}
+
       {/* Tabela */}
+      {viewMode === 'tabela' && (
       <div className="overflow-hidden rounded-lg border border-ink/10 bg-white">
         <table className="w-full text-sm">
           <thead className="border-b border-ink/10 bg-ink/[0.02] text-left text-xs uppercase tracking-wide text-ink/60">
@@ -364,6 +424,7 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           </tbody>
         </table>
       </div>
+      )}
 
       <PostDetailDrawer
         post={selecionado}
