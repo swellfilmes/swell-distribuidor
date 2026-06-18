@@ -4,7 +4,7 @@ import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
 import { loadTenantConfig } from '@/src/db/tenantConfig';
 import {
   listarPostsDoNotion,
-  clientesUnicos,
+  clientesDaEmpresa,
   type PostListado,
   type CampoSort,
   type DirecaoSort,
@@ -86,23 +86,13 @@ export default async function PostsPage({ searchParams }: Props) {
     erro = e instanceof Error ? e.message : String(e);
   }
 
-  // Pra montar o filtro de Cliente, busco TODOS os clientes (sem filtro de cliente)
-  // se algum filtro de cliente estiver ativo; senão reuso os da lista atual.
+  // Lista de clientes: cacheada em memória (TTL 10min) — não custa query Notion
+  // a cada page load. Invalidada quando criar/editar empresa via outras rotas.
   let listaClientes: string[];
-  if (filtros.cliente) {
-    try {
-      const todos = await listarPostsDoNotion(tenant, {
-        status: filtros.status,
-        mes: filtros.mes,
-        tipo: filtros.tipo,
-        redes: filtros.redes,
-      });
-      listaClientes = clientesUnicos(todos);
-    } catch {
-      listaClientes = clientesUnicos(posts);
-    }
-  } else {
-    listaClientes = clientesUnicos(posts);
+  try {
+    listaClientes = await clientesDaEmpresa(tenant);
+  } catch {
+    listaClientes = [];
   }
 
   return (

@@ -9,7 +9,7 @@
  * Produção (F2.6+): rodando no Railway como serviço persistente.
  */
 import { Cron } from 'croner';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/src/db';
 import { jobs } from '@/src/db/schema';
 import { processarIngest, type PayloadIngest } from './handlers/ingest';
@@ -18,6 +18,8 @@ import { sincronizarEditsTodas } from './crons/sincronizarEditsTodas';
 import { atualizarPendentesTodas } from './crons/atualizarPendentesTodas';
 
 const INTERVALO_POLL_MS = 5_000;
+const MAX_CONCURRENCY = 2;
+const MAX_TENTATIVAS = 3;
 const TIMEZONE = 'America/Bahia';
 
 function log(jobId: number | '', etapa: string, msg: string) {
@@ -26,33 +28,38 @@ function log(jobId: number | '', etapa: string, msg: string) {
   console.log(`[${hora}] [worker ${tag}] [${etapa}] ${msg}`);
 }
 
-async function claimNextJob(): Promise<typeof jobs.$inferSelect | null> {
+/**
+ * Reivindica até N jobs pendentes atomicamente. Cada UPDATE checa `status=pending`
+ * de novo na WHERE, então 2 workers concorrentes nunca pegam o mesmo job.
+ */
+async function claimNextBatch(n: number): Promise<Array<typeof jobs.$inferSelect>> {
   const candidatos = await db
     .select()
     .from(jobs)
     .where(eq(jobs.status, 'pending'))
     .orderBy(asc(jobs.criadoEm))
-    .limit(1);
-  if (candidatos.length === 0) return null;
+    .limit(n);
+  if (candidatos.length === 0) return [];
 
-  const reivindicado = await db
-    .update(jobs)
-    .set({
-      status: 'in_progress',
-      iniciadoEm: new Date(),
-      atualizadoEm: new Date(),
-      tentativas: candidatos[0].tentativas + 1,
-    })
-    .where(and(eq(jobs.id, candidatos[0].id), eq(jobs.status, 'pending')))
-    .returning();
-  return reivindicado[0] ?? null;
+  const reivindicados: Array<typeof jobs.$inferSelect> = [];
+  for (const cand of candidatos) {
+    const r = await db
+      .update(jobs)
+      .set({
+        status: 'in_progress',
+        iniciadoEm: new Date(),
+        atualizadoEm: new Date(),
+        tentativas: cand.tentativas + 1,
+      })
+      .where(and(eq(jobs.id, cand.id), eq(jobs.status, 'pending')))
+      .returning();
+    if (r[0]) reivindicados.push(r[0]);
+  }
+  return reivindicados;
 }
 
-async function rodarUm(): Promise<boolean> {
-  const job = await claimNextJob();
-  if (!job) return false;
-
-  log(job.id, 'inicio', `tipo=${job.tipo} empresa=${job.empresaId}`);
+async function rodar(job: typeof jobs.$inferSelect): Promise<void> {
+  log(job.id, 'inicio', `tipo=${job.tipo} empresa=${job.empresaId} tentativa=${job.tentativas}`);
 
   try {
     if (job.tipo === 'ingest') {
@@ -80,27 +87,70 @@ async function rodarUm(): Promise<boolean> {
     }
   } catch (err) {
     const msg = err instanceof Error ? err.stack ?? err.message : String(err);
-    log(job.id, 'erro', `❌ ${msg.split('\n')[0]}`);
-    await db
-      .update(jobs)
-      .set({
-        status: 'failed',
-        erro: msg,
-        atualizadoEm: new Date(),
-        finalizadoEm: new Date(),
-      })
-      .where(eq(jobs.id, job.id));
+    const podeRetentar = job.tentativas < MAX_TENTATIVAS;
+    if (podeRetentar) {
+      log(job.id, 'retry', `❌ ${msg.split('\n')[0]} → tentativa ${job.tentativas}/${MAX_TENTATIVAS}, voltando pra pending`);
+      await db
+        .update(jobs)
+        .set({
+          status: 'pending',
+          erro: msg,
+          atualizadoEm: new Date(),
+          iniciadoEm: null,
+        })
+        .where(eq(jobs.id, job.id));
+    } else {
+      log(job.id, 'fail', `❌ ${msg.split('\n')[0]} → falhou em definitivo após ${MAX_TENTATIVAS} tentativas`);
+      await db
+        .update(jobs)
+        .set({
+          status: 'failed',
+          erro: msg,
+          atualizadoEm: new Date(),
+          finalizadoEm: new Date(),
+        })
+        .where(eq(jobs.id, job.id));
+    }
   }
-  return true;
 }
 
+/**
+ * Loop que mantém até MAX_CONCURRENCY jobs rodando em paralelo.
+ * Cada slot pega um job, processa, libera o slot. Quando todos slots livres
+ * e fila vazia, dorme INTERVALO_POLL_MS.
+ */
 async function loopDeJobs() {
-  log('', 'jobs', `polling a cada ${INTERVALO_POLL_MS / 1000}s...`);
+  log('', 'jobs', `polling a cada ${INTERVALO_POLL_MS / 1000}s (concorrência ${MAX_CONCURRENCY})...`);
+
+  const ativos = new Set<Promise<void>>();
+  // dedupe: ids já em processamento (defensivo extra)
+  const idsAtivos = new Set<number>();
+
   while (true) {
     try {
-      const processou = await rodarUm();
-      if (!processou) {
+      const podemPegar = MAX_CONCURRENCY - ativos.size;
+      if (podemPegar > 0) {
+        const novos = await claimNextBatch(podemPegar);
+        const filtrados = novos.filter((j) => !idsAtivos.has(j.id));
+        for (const job of filtrados) {
+          idsAtivos.add(job.id);
+          const p = rodar(job).finally(() => {
+            idsAtivos.delete(job.id);
+            ativos.delete(p);
+          });
+          ativos.add(p);
+        }
+      }
+
+      if (ativos.size === 0) {
         await new Promise((r) => setTimeout(r, INTERVALO_POLL_MS));
+      } else {
+        // Espera o próximo terminar OU 1s, o que vier antes — pra reagir
+        // rapidamente quando um slot abre e tem mais coisa na fila.
+        await Promise.race([
+          Promise.race([...ativos]),
+          new Promise((r) => setTimeout(r, 1_000)),
+        ]);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -144,8 +194,18 @@ function registrarCrons() {
 }
 
 async function main() {
-  log('', 'boot', 'worker subindo...');
+  log('', 'boot', `worker subindo... (concorrência=${MAX_CONCURRENCY}, max tentativas=${MAX_TENTATIVAS})`);
   registrarCrons();
+  // Reset de jobs `in_progress` órfãos (vieram de boot anterior que crashou)
+  try {
+    await db
+      .update(jobs)
+      .set({ status: 'pending', iniciadoEm: null, atualizadoEm: new Date() })
+      .where(inArray(jobs.status, ['in_progress']));
+    log('', 'boot', 'jobs órfãos resetados pra pending.');
+  } catch (err) {
+    log('', 'boot', `aviso: reset de órfãos falhou: ${err instanceof Error ? err.message : String(err)}`);
+  }
   await loopDeJobs();
 }
 

@@ -53,10 +53,10 @@ export async function PATCH(
   }
 
   try {
-    const post = await patchPostNoNotion(r.tenant, pageId, body);
-    return NextResponse.json({ post });
+    const resultado = await patchPostNoNotion(r.tenant, pageId, body);
+    return NextResponse.json({ ok: true, campos: resultado.campos });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 }

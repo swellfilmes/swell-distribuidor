@@ -43,8 +43,8 @@ export function Uploader() {
   async function subir(arquivo: File) {
     setEtapa({ tipo: 'subindo', pct: 0, nome: arquivo.name });
 
-    // 1) Pega URL assinada
-    let presign: { url: string; chaveR2: string; urlPublica: string };
+    // 1) Pede URL assinada — backend pode detectar duplicata
+    let presign: { url: string; chaveR2: string; urlPublica: string; dedupeKey: string };
     try {
       const resp = await fetch('/api/upload/url', {
         method: 'POST',
@@ -52,13 +52,24 @@ export function Uploader() {
         body: JSON.stringify({
           nomeArquivo: arquivo.name,
           contentType: arquivo.type || 'video/mp4',
+          tamanhoBytes: arquivo.size,
+          lastModified: arquivo.lastModified,
         }),
       });
       if (!resp.ok) {
         const d = (await resp.json().catch(() => ({}))) as { error?: string };
         throw new Error(d.error ?? `HTTP ${resp.status} na URL assinada`);
       }
-      presign = (await resp.json()) as typeof presign;
+      const data = (await resp.json()) as
+        | (typeof presign & { duplicate?: false })
+        | { duplicate: true; jobId: number; status: string; mensagem: string };
+      if ('duplicate' in data && data.duplicate) {
+        // Já existe job recente igual — pula upload e conecta no existente
+        console.log('[upload] duplicata detectada:', data.mensagem);
+        setEtapa({ tipo: 'enfileirado', jobId: data.jobId, nome: arquivo.name });
+        return;
+      }
+      presign = data as typeof presign;
     } catch (err) {
       setEtapa({
         tipo: 'erro',
@@ -111,6 +122,7 @@ export function Uploader() {
             chaveR2: presign.chaveR2,
             urlPublica: presign.urlPublica,
             nomeArquivo: arquivo.name,
+            dedupeKey: presign.dedupeKey,
           },
         }),
       });

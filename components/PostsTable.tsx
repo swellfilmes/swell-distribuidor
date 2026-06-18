@@ -171,10 +171,8 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           const data = (await resp.json().catch(() => ({}))) as { error?: string };
           throw new Error(data.error ?? `HTTP ${resp.status}`);
         }
-        const data = (await resp.json()) as { post: PostListado };
-        setPosts((atual) =>
-          atual.map((p) => (p.pageId === pageId ? data.post : p)),
-        );
+        // Servidor não devolve o post (otimização Onda 1: 1 roundtrip).
+        // Estado otimista permanece; auto-refresh 30s reconcilia.
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         setErros((m) => {

@@ -297,3 +297,30 @@ export function clientesUnicos(posts: PostListado[]): string[] {
   }
   return [...set].sort();
 }
+
+/**
+ * Cache em memória de "todos os clientes desta empresa" — evita 2ª query Notion
+ * quando o filtro de cliente está ativo na tabela.
+ * TTL: 10 min. Invalida na criação/edição via `invalidarCacheClientes(slug)`.
+ */
+const cacheClientes = new Map<string, { lista: string[]; expiraEm: number }>();
+const TTL_CACHE_CLIENTES_MS = 10 * 60 * 1000;
+
+export async function clientesDaEmpresa(
+  tenant: TenantConfig,
+): Promise<string[]> {
+  const agora = Date.now();
+  const hit = cacheClientes.get(tenant.slug);
+  if (hit && hit.expiraEm > agora) return hit.lista;
+
+  // Sem cache: puxa lista completa do Notion 1x.
+  const todos = await listarPostsDoNotion(tenant, {});
+  const lista = clientesUnicos(todos);
+  cacheClientes.set(tenant.slug, { lista, expiraEm: agora + TTL_CACHE_CLIENTES_MS });
+  return lista;
+}
+
+export function invalidarCacheClientes(slug?: string): void {
+  if (slug) cacheClientes.delete(slug);
+  else cacheClientes.clear();
+}
