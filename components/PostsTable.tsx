@@ -59,6 +59,37 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
   const [viewMode, setViewMode] = useState<'tabela' | 'calendario'>(
     (searchParams.get('view') as 'tabela' | 'calendario') ?? 'tabela',
   );
+  const [sincronizando, setSincronizando] = useState(false);
+  const [resultadoSync, setResultadoSync] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  async function sincronizarZernio() {
+    setSincronizando(true);
+    setResultadoSync(null);
+    try {
+      const resp = await fetch('/api/sync-zernio', { method: 'POST' });
+      const data = (await resp.json()) as
+        | { ok: true; duracaoMs: number; logs: string[] }
+        | { error: string };
+      if ('error' in data) {
+        setResultadoSync({ ok: false, msg: data.error });
+      } else {
+        const seg = (data.duracaoMs / 1000).toFixed(1);
+        setResultadoSync({
+          ok: true,
+          msg: `✓ Sincronizado em ${seg}s. ${data.logs.length} mensagens do worker.`,
+        });
+        router.refresh();
+      }
+    } catch (err) {
+      setResultadoSync({
+        ok: false,
+        msg: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setSincronizando(false);
+      setTimeout(() => setResultadoSync(null), 6000);
+    }
+  }
 
   function trocarView(novo: 'tabela' | 'calendario') {
     setViewMode(novo);
@@ -290,6 +321,14 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
         <div className="ml-auto flex items-center gap-3 text-xs text-ink/50">
           <span>Atualizado {tempoRelativo(geradoEm)} atrás</span>
           <button
+            onClick={sincronizarZernio}
+            disabled={sincronizando}
+            title="Puxa o status de cada post do Zernio e atualiza no Notion (Agendado → Publicado etc.). Cron faz isso sozinho a cada 15min."
+            className="rounded-md border border-ink/15 px-2 py-1 text-ink/80 hover:bg-ink/5 disabled:opacity-60"
+          >
+            {sincronizando ? 'Sincronizando…' : '↻ Sync Zernio'}
+          </button>
+          <button
             onClick={refrescar}
             disabled={pending}
             className="rounded-md border border-ink/15 px-2 py-1 text-ink/80 hover:bg-ink/5 disabled:opacity-60"
@@ -298,6 +337,19 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           </button>
         </div>
       </div>
+
+      {resultadoSync && (
+        <div
+          className={
+            'mb-3 rounded-md px-3 py-2 text-sm ' +
+            (resultadoSync.ok
+              ? 'border border-emerald-200 bg-emerald-50 text-emerald-900'
+              : 'border border-rose-200 bg-rose-50 text-rose-900')
+          }
+        >
+          {resultadoSync.msg}
+        </div>
+      )}
 
       {viewMode === 'calendario' && (
         <CalendarView
