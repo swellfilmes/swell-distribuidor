@@ -124,7 +124,10 @@ export async function publicarAprovados(
   if (linhas.length === 0) return;
 
   for (const linha of linhas) {
-    onLog(`\n→ ${linha.nome} (agendar para ${linha.dataPublicacao})`);
+    const noPassado = new Date(linha.dataPublicacao).getTime() <= Date.now();
+    onLog(
+      `\n→ ${linha.nome} (${noPassado ? 'data já passou, publicar agora' : `agendar para ${linha.dataPublicacao}`})`,
+    );
     const midia: MidiaHospedada = {
       urlPublica: linha.videoUrl,
       chaveR2: '(referência via Notion)',
@@ -144,7 +147,7 @@ export async function publicarAprovados(
       planoFinal,
       midia,
       {
-        scheduledFor: linha.dataPublicacao,
+        scheduledFor: noPassado ? undefined : linha.dataPublicacao,
         onTick: (msg) => onLog(`  ${msg}`),
       },
     );
@@ -173,7 +176,7 @@ export async function publicarAprovados(
 
     // Salva no PlanoJSON a data que mandamos pro Zernio, pro cron de sincronização
     // poder detectar mudanças de data depois.
-    if (zernioPostId) {
+    if (zernioPostId && !noPassado) {
       const planoComData: PlanoPublicacao = {
         ...planoFinal,
         dataAgendadaEmZernio: linha.dataPublicacao,
