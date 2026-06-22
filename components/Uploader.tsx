@@ -1,21 +1,28 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const MAX_CONCORRENTES = 3;
+
 type Etapa =
-  | { tipo: 'idle' }
-  | { tipo: 'subindo'; pct: number; nome: string }
-  | { tipo: 'enfileirado'; jobId: number; nome: string }
-  | { tipo: 'processando'; jobId: number; nome: string; logs: string[] }
+  | { tipo: 'fila'; pct: 0 }
+  | { tipo: 'subindo'; pct: number }
+  | { tipo: 'enfileirado'; jobId: number }
+  | { tipo: 'processando'; jobId: number; logs: string[] }
   | {
       tipo: 'concluido';
       jobId: number;
-      nome: string;
       resultado: { pageId: string; notionUrl: string; cliente: string; tipo: string };
       logs: string[];
     }
-  | { tipo: 'erro'; jobId?: number; nome?: string; erro: string };
+  | { tipo: 'erro'; jobId?: number; erro: string };
+
+interface ItemUpload {
+  key: string;
+  arquivo: File;
+  etapa: Etapa;
+}
 
 interface Job {
   id: number;
@@ -30,20 +37,28 @@ interface Job {
   } | null;
 }
 
+function chaveArquivo(arquivo: File): string {
+  return `${arquivo.name}::${arquivo.size}::${arquivo.lastModified}`;
+}
+
 export function Uploader() {
   const router = useRouter();
-  const [etapa, setEtapa] = useState<Etapa>({ tipo: 'idle' });
+  const [itens, setItens] = useState<ItemUpload[]>([]);
   const [drag, setDrag] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const itensRef = useRef<ItemUpload[]>([]);
+  itensRef.current = itens;
 
-  function abrirSeletor() {
-    inputRef.current?.click();
+  function patchItem(key: string, patch: (it: ItemUpload) => ItemUpload) {
+    setItens((atuais) =>
+      atuais.map((it) => (it.key === key ? patch(it) : it)),
+    );
   }
 
-  async function subir(arquivo: File) {
-    setEtapa({ tipo: 'subindo', pct: 0, nome: arquivo.name });
+  async function subir(item: ItemUpload) {
+    const { key, arquivo } = item;
+    patchItem(key, (it) => ({ ...it, etapa: { tipo: 'subindo', pct: 0 } }));
 
-    // 1) Pede URL assinada — backend pode detectar duplicata
     let presign: { url: string; chaveR2: string; urlPublica: string; dedupeKey: string };
     try {
       const resp = await fetch('/api/upload/url', {
@@ -64,22 +79,24 @@ export function Uploader() {
         | (typeof presign & { duplicate?: false })
         | { duplicate: true; jobId: number; status: string; mensagem: string };
       if ('duplicate' in data && data.duplicate) {
-        // Já existe job recente igual — pula upload e conecta no existente
-        console.log('[upload] duplicata detectada:', data.mensagem);
-        setEtapa({ tipo: 'enfileirado', jobId: data.jobId, nome: arquivo.name });
+        patchItem(key, (it) => ({
+          ...it,
+          etapa: { tipo: 'enfileirado', jobId: data.jobId },
+        }));
         return;
       }
       presign = data as typeof presign;
     } catch (err) {
-      setEtapa({
-        tipo: 'erro',
-        nome: arquivo.name,
-        erro: err instanceof Error ? err.message : String(err),
-      });
+      patchItem(key, (it) => ({
+        ...it,
+        etapa: {
+          tipo: 'erro',
+          erro: err instanceof Error ? err.message : String(err),
+        },
+      }));
       return;
     }
 
-    // 2) PUT no R2 com XHR pra acompanhar progresso
     try {
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -88,7 +105,7 @@ export function Uploader() {
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable) {
             const pct = Math.round((e.loaded / e.total) * 100);
-            setEtapa({ tipo: 'subindo', pct, nome: arquivo.name });
+            patchItem(key, (it) => ({ ...it, etapa: { tipo: 'subindo', pct } }));
           }
         });
         xhr.addEventListener('load', () =>
@@ -102,16 +119,16 @@ export function Uploader() {
         xhr.send(arquivo);
       });
     } catch (err) {
-      setEtapa({
-        tipo: 'erro',
-        nome: arquivo.name,
-        erro: err instanceof Error ? err.message : String(err),
-      });
+      patchItem(key, (it) => ({
+        ...it,
+        etapa: {
+          tipo: 'erro',
+          erro: err instanceof Error ? err.message : String(err),
+        },
+      }));
       return;
     }
 
-    // 3) Cria job
-    let jobId: number;
     try {
       const resp = await fetch('/api/jobs', {
         method: 'POST',
@@ -131,75 +148,119 @@ export function Uploader() {
         throw new Error(d.error ?? `HTTP ${resp.status} criando job`);
       }
       const data = (await resp.json()) as { id: number };
-      jobId = data.id;
+      patchItem(key, (it) => ({
+        ...it,
+        etapa: { tipo: 'enfileirado', jobId: data.id },
+      }));
     } catch (err) {
-      setEtapa({
-        tipo: 'erro',
-        nome: arquivo.name,
-        erro: err instanceof Error ? err.message : String(err),
-      });
-      return;
+      patchItem(key, (it) => ({
+        ...it,
+        etapa: {
+          tipo: 'erro',
+          erro: err instanceof Error ? err.message : String(err),
+        },
+      }));
     }
-
-    setEtapa({ tipo: 'enfileirado', jobId, nome: arquivo.name });
   }
 
-  // Poll de status quando temos jobId
+  function adicionarArquivos(arquivos: FileList | File[]) {
+    const novos: ItemUpload[] = [];
+    const existentes = new Set(itensRef.current.map((it) => it.key));
+    for (const arquivo of Array.from(arquivos)) {
+      if (!arquivo.type.startsWith('video/')) continue;
+      const key = chaveArquivo(arquivo);
+      if (existentes.has(key)) continue;
+      existentes.add(key);
+      novos.push({ key, arquivo, etapa: { tipo: 'fila', pct: 0 } });
+    }
+    if (novos.length === 0) return;
+    setItens((atuais) => [...atuais, ...novos]);
+  }
+
+  // Despacho: enquanto houver vagas (< MAX_CONCORRENTES subindo) e itens na fila, dispara.
   useEffect(() => {
-    if (etapa.tipo !== 'enfileirado' && etapa.tipo !== 'processando') return;
-    const jobId = etapa.jobId;
-    const nome = etapa.nome;
+    const subindoAgora = itens.filter((it) => it.etapa.tipo === 'subindo').length;
+    const vagas = MAX_CONCORRENTES - subindoAgora;
+    if (vagas <= 0) return;
+    const naFila = itens.filter((it) => it.etapa.tipo === 'fila').slice(0, vagas);
+    for (const it of naFila) {
+      // Marca como "subindo" otimisticamente pra outra render não re-disparar.
+      patchItem(it.key, (cur) => ({ ...cur, etapa: { tipo: 'subindo', pct: 0 } }));
+      void subir(it);
+    }
+  }, [itens]);
+
+  // Polling pra jobs em enfileirado/processando.
+  const jobIdsAtivos = useMemo(
+    () =>
+      itens
+        .filter(
+          (it) =>
+            it.etapa.tipo === 'enfileirado' || it.etapa.tipo === 'processando',
+        )
+        .map((it) =>
+          it.etapa.tipo === 'enfileirado' || it.etapa.tipo === 'processando'
+            ? { key: it.key, jobId: it.etapa.jobId }
+            : null,
+        )
+        .filter((x): x is { key: string; jobId: number } => x !== null),
+    [itens],
+  );
+
+  useEffect(() => {
+    if (jobIdsAtivos.length === 0) return;
     let cancelado = false;
 
     const tick = async () => {
       if (cancelado) return;
-      try {
-        const resp = await fetch(`/api/jobs/${jobId}`, { cache: 'no-store' });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = (await resp.json()) as { job: Job };
-        const j = data.job;
-        if (cancelado) return;
-        if (j.status === 'pending') {
-          setEtapa({ tipo: 'enfileirado', jobId, nome });
-        } else if (j.status === 'in_progress') {
-          setEtapa({
-            tipo: 'processando',
-            jobId,
-            nome,
-            logs: (j.result?.logs as string[] | undefined) ?? [],
-          });
-        } else if (j.status === 'done' && j.result) {
-          setEtapa({
-            tipo: 'concluido',
-            jobId,
-            nome,
-            resultado: {
-              pageId: j.result.pageId,
-              notionUrl: j.result.notionUrl,
-              cliente: j.result.cliente,
-              tipo: j.result.tipo,
-            },
-            logs: j.result.logs ?? [],
-          });
-          // Avisa a tabela pra refrescar quando o usuário voltar
-          router.refresh();
-        } else if (j.status === 'failed') {
-          setEtapa({
-            tipo: 'erro',
-            jobId,
-            nome,
-            erro: j.erro ?? 'falhou (sem detalhes)',
-          });
-        }
-      } catch (err) {
-        if (cancelado) return;
-        setEtapa({
-          tipo: 'erro',
-          jobId,
-          nome,
-          erro: err instanceof Error ? err.message : String(err),
-        });
-      }
+      await Promise.all(
+        jobIdsAtivos.map(async ({ key, jobId }) => {
+          try {
+            const resp = await fetch(`/api/jobs/${jobId}`, { cache: 'no-store' });
+            if (!resp.ok) return;
+            const data = (await resp.json()) as { job: Job };
+            if (cancelado) return;
+            const j = data.job;
+            if (j.status === 'in_progress') {
+              patchItem(key, (it) => ({
+                ...it,
+                etapa: {
+                  tipo: 'processando',
+                  jobId,
+                  logs: (j.result?.logs as string[] | undefined) ?? [],
+                },
+              }));
+            } else if (j.status === 'done' && j.result) {
+              patchItem(key, (it) => ({
+                ...it,
+                etapa: {
+                  tipo: 'concluido',
+                  jobId,
+                  resultado: {
+                    pageId: j.result!.pageId,
+                    notionUrl: j.result!.notionUrl,
+                    cliente: j.result!.cliente,
+                    tipo: j.result!.tipo,
+                  },
+                  logs: j.result!.logs ?? [],
+                },
+              }));
+              router.refresh();
+            } else if (j.status === 'failed') {
+              patchItem(key, (it) => ({
+                ...it,
+                etapa: {
+                  tipo: 'erro',
+                  jobId,
+                  erro: j.erro ?? 'falhou (sem detalhes)',
+                },
+              }));
+            }
+          } catch {
+            // Falha de polling não estoura o item; tenta de novo no próximo tick.
+          }
+        }),
+      );
     };
 
     tick();
@@ -208,160 +269,197 @@ export function Uploader() {
       cancelado = true;
       clearInterval(id);
     };
-  }, [etapa, router]);
+  }, [jobIdsAtivos, router]);
 
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
     setDrag(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f) subir(f);
+    if (e.dataTransfer.files) adicionarArquivos(e.dataTransfer.files);
   }
 
-  function novoUpload() {
-    setEtapa({ tipo: 'idle' });
+  function limparConcluidos() {
+    setItens((atuais) =>
+      atuais.filter(
+        (it) => it.etapa.tipo !== 'concluido' && it.etapa.tipo !== 'erro',
+      ),
+    );
   }
+
+  function removerItem(key: string) {
+    setItens((atuais) => atuais.filter((it) => it.key !== key));
+  }
+
+  const temAtividade = itens.some(
+    (it) =>
+      it.etapa.tipo === 'fila' ||
+      it.etapa.tipo === 'subindo' ||
+      it.etapa.tipo === 'enfileirado' ||
+      it.etapa.tipo === 'processando',
+  );
+  const temFinalizado = itens.some(
+    (it) => it.etapa.tipo === 'concluido' || it.etapa.tipo === 'erro',
+  );
 
   return (
     <div>
-      {etapa.tipo === 'idle' && (
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDrag(true);
-          }}
-          onDragLeave={() => setDrag(false)}
-          onDrop={onDrop}
-          onClick={abrirSeletor}
-          className={
-            'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-16 text-center transition-colors ' +
-            (drag
-              ? 'border-ink bg-ink/5'
-              : 'border-ink/20 bg-white hover:border-ink/40')
-          }
-        >
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="mb-3 text-ink/40">
-            <path
-              d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
-          <p className="text-base font-medium text-ink/85">
-            Arrasta o vídeo aqui ou clica pra escolher
-          </p>
-          <p className="mt-1 text-xs text-ink/55">
-            MP4 / MOV / WEBM — sobe direto no R2 da Swell
-          </p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="video/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) subir(f);
-              e.target.value = '';
-            }}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDrag(true);
+        }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={onDrop}
+        onClick={() => inputRef.current?.click()}
+        className={
+          'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors ' +
+          (drag
+            ? 'border-ink bg-ink/5'
+            : 'border-ink/20 bg-white hover:border-ink/40')
+        }
+      >
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="mb-3 text-ink/40">
+          <path
+            d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
           />
+        </svg>
+        <p className="text-base font-medium text-ink/85">
+          Arrasta um ou vários vídeos aqui ou clica pra escolher
+        </p>
+        <p className="mt-1 text-xs text-ink/55">
+          MP4 / MOV / WEBM — máx. {MAX_CONCORRENTES} subindo ao mesmo tempo
+        </p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="video/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files) adicionarArquivos(e.target.files);
+            e.target.value = '';
+          }}
+        />
+      </div>
+
+      {itens.length > 0 && (
+        <div className="mt-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-ink/70">
+              {itens.length} arquivo{itens.length === 1 ? '' : 's'}
+              {temAtividade ? ' — processando…' : ''}
+            </h2>
+            {temFinalizado && (
+              <button
+                onClick={limparConcluidos}
+                className="text-xs font-medium text-ink/60 hover:text-ink/90"
+              >
+                Limpar concluídos
+              </button>
+            )}
+          </div>
+
+          {itens.map((it) => (
+            <ItemCard key={it.key} item={it} onRemover={() => removerItem(it.key)} />
+          ))}
         </div>
       )}
 
-      {etapa.tipo === 'subindo' && (
-        <Cartao titulo={`Subindo no R2 — ${etapa.nome}`}>
-          <Barra pct={etapa.pct} />
-          <p className="mt-2 text-xs text-ink/60">{etapa.pct}%</p>
-        </Cartao>
-      )}
-
-      {etapa.tipo === 'enfileirado' && (
-        <Cartao titulo={`Enfileirado — ${etapa.nome}`}>
-          <p className="text-sm text-ink/70">
-            Aguardando worker pegar o job (#{etapa.jobId})…
-          </p>
-          <AvisoWorker />
-        </Cartao>
-      )}
-
-      {etapa.tipo === 'processando' && (
-        <Cartao titulo={`Processando — ${etapa.nome}`}>
-          <p className="text-sm text-ink/70">
-            Worker rodando (job #{etapa.jobId}). Costuma levar 30-90s.
-          </p>
-          <div className="mt-2 h-1 w-full overflow-hidden rounded bg-ink/10">
-            <div className="h-full w-1/3 animate-pulse bg-ink/60" />
-          </div>
-        </Cartao>
-      )}
-
-      {etapa.tipo === 'concluido' && (
-        <Cartao titulo={`✅ Pronto — ${etapa.nome}`} sucesso>
-          <dl className="mt-2 grid grid-cols-[100px_1fr] gap-y-1 text-sm">
-            <dt className="text-ink/60">Cliente</dt>
-            <dd>{etapa.resultado.cliente}</dd>
-            <dt className="text-ink/60">Tipo</dt>
-            <dd>{etapa.resultado.tipo}</dd>
-          </dl>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <a
-              href="/app/posts"
-              className="rounded-md bg-ink px-3 py-1.5 text-sm font-medium text-cream hover:opacity-90"
-            >
-              Ver na tabela ↓
-            </a>
-            <a
-              href={etapa.resultado.notionUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-md border border-ink/20 px-3 py-1.5 text-sm font-medium text-ink/80 hover:bg-ink/5"
-            >
-              Abrir no Notion ↗
-            </a>
-            <button
-              onClick={novoUpload}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-ink/70 hover:bg-ink/5"
-            >
-              Subir outro
-            </button>
-          </div>
-        </Cartao>
-      )}
-
-      {etapa.tipo === 'erro' && (
-        <Cartao titulo="❌ Erro" erro>
-          <p className="text-sm text-rose-800">{etapa.erro}</p>
-          <button
-            onClick={novoUpload}
-            className="mt-3 rounded-md border border-rose-300 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50"
-          >
-            Tentar de novo
-          </button>
-        </Cartao>
+      {itens.length > 0 && temAtividade && (
+        <AvisoWorker />
       )}
     </div>
   );
 }
 
-function Cartao({
-  titulo,
-  children,
-  sucesso = false,
-  erro = false,
+function ItemCard({
+  item,
+  onRemover,
 }: {
-  titulo: string;
-  children: React.ReactNode;
-  sucesso?: boolean;
-  erro?: boolean;
+  item: ItemUpload;
+  onRemover: () => void;
 }) {
+  const { arquivo, etapa } = item;
+  const sucesso = etapa.tipo === 'concluido';
+  const erro = etapa.tipo === 'erro';
   const borda = sucesso
     ? 'border-emerald-200 bg-emerald-50'
     : erro
     ? 'border-rose-200 bg-rose-50'
     : 'border-ink/15 bg-white';
+
+  const podeRemover =
+    etapa.tipo === 'fila' || etapa.tipo === 'concluido' || etapa.tipo === 'erro';
+
   return (
-    <div className={`rounded-lg border p-5 ${borda}`}>
-      <h2 className="mb-2 text-base font-semibold">{titulo}</h2>
-      {children}
+    <div className={`rounded-lg border p-4 ${borda}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-ink/85">{arquivo.name}</p>
+          <p className="mt-0.5 text-xs text-ink/55">
+            {(arquivo.size / 1024 / 1024).toFixed(1)} MB
+          </p>
+        </div>
+        {podeRemover && (
+          <button
+            onClick={onRemover}
+            className="text-xs text-ink/50 hover:text-ink/80"
+            title="Remover"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      <div className="mt-2">
+        {etapa.tipo === 'fila' && (
+          <p className="text-xs text-ink/60">Na fila…</p>
+        )}
+        {etapa.tipo === 'subindo' && (
+          <>
+            <Barra pct={etapa.pct} />
+            <p className="mt-1 text-xs text-ink/60">Subindo no R2 — {etapa.pct}%</p>
+          </>
+        )}
+        {etapa.tipo === 'enfileirado' && (
+          <p className="text-xs text-ink/60">
+            Enfileirado (job #{etapa.jobId}) — aguardando worker…
+          </p>
+        )}
+        {etapa.tipo === 'processando' && (
+          <>
+            <div className="h-1 w-full overflow-hidden rounded bg-ink/10">
+              <div className="h-full w-1/3 animate-pulse bg-ink/60" />
+            </div>
+            <p className="mt-1 text-xs text-ink/60">
+              Worker processando (job #{etapa.jobId})…
+            </p>
+          </>
+        )}
+        {etapa.tipo === 'concluido' && (
+          <div className="space-y-2">
+            <dl className="grid grid-cols-[80px_1fr] gap-y-0.5 text-xs">
+              <dt className="text-ink/55">Cliente</dt>
+              <dd>{etapa.resultado.cliente}</dd>
+              <dt className="text-ink/55">Tipo</dt>
+              <dd>{etapa.resultado.tipo}</dd>
+            </dl>
+            <a
+              href={etapa.resultado.notionUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-xs font-medium text-emerald-800 underline hover:text-emerald-950"
+            >
+              Abrir no Notion ↗
+            </a>
+          </div>
+        )}
+        {etapa.tipo === 'erro' && (
+          <p className="text-xs text-rose-800">❌ {etapa.erro}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -379,11 +477,10 @@ function Barra({ pct }: { pct: number }) {
 
 function AvisoWorker() {
   return (
-    <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-      💡 Lembra: o worker precisa estar rodando em outro terminal —{' '}
-      <code className="rounded bg-white px-1">npm run worker</code>. Senão o
-      job fica enfileirado pra sempre. Na F2.6 isso vai pro Railway e não vai
-      precisar mais disso.
+    <p className="mt-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+      💡 O worker do Railway pega os jobs em paralelo. Se algum ficar parado em
+      &ldquo;enfileirado&rdquo; por mais de 1min, dá uma olhada no painel do
+      Railway.
     </p>
   );
 }
