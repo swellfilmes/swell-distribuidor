@@ -18,7 +18,7 @@ import { sincronizarEditsTodas } from './crons/sincronizarEditsTodas';
 import { atualizarPendentesTodas } from './crons/atualizarPendentesTodas';
 
 const INTERVALO_POLL_MS = 5_000;
-const MAX_CONCURRENCY = 2;
+const MAX_CONCURRENCY = 1;
 const MAX_TENTATIVAS = 3;
 const TIMEZONE = 'America/Bahia';
 
