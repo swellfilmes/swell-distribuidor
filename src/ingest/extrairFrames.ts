@@ -43,32 +43,33 @@ export async function extrairFrames(
   const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'swell-frames-'));
 
   try {
-    await Promise.all(
-      timestamps.map(async (ts, i) => {
-        const out = path.join(tmpDir, `frame_${String(i).padStart(2, '0')}.jpg`);
-        await exec('ffmpeg', [
-          '-ss', ts.toFixed(2),
-          '-i', caminhoVideo,
-          '-frames:v', '1',
-          '-vf', 'scale=640:-1',
-          '-q:v', '3',
-          '-y',
-          out,
-        ]);
-      }),
-    );
+    // Sequencial de propósito: 6 ffmpegs em paralelo cada um abre o vídeo
+    // inteiro na memória, multiplicando o pico de RAM e estourando o
+    // container do Railway. 1 por vez mantém o working set baixo.
+    for (let i = 0; i < timestamps.length; i++) {
+      const ts = timestamps[i];
+      const out = path.join(tmpDir, `frame_${String(i).padStart(2, '0')}.jpg`);
+      await exec('ffmpeg', [
+        '-ss', ts.toFixed(2),
+        '-i', caminhoVideo,
+        '-frames:v', '1',
+        '-vf', 'scale=640:-1',
+        '-q:v', '3',
+        '-y',
+        out,
+      ]);
+    }
 
-    const frames: FrameExtraido[] = await Promise.all(
-      timestamps.map(async (ts, i) => {
-        const out = path.join(tmpDir, `frame_${String(i).padStart(2, '0')}.jpg`);
-        const buffer = await readFile(out);
-        return {
-          timestampSeg: ts,
-          base64: buffer.toString('base64'),
-          mediaType: 'image/jpeg' as const,
-        };
-      }),
-    );
+    const frames: FrameExtraido[] = [];
+    for (let i = 0; i < timestamps.length; i++) {
+      const out = path.join(tmpDir, `frame_${String(i).padStart(2, '0')}.jpg`);
+      const buffer = await readFile(out);
+      frames.push({
+        timestampSeg: timestamps[i],
+        base64: buffer.toString('base64'),
+        mediaType: 'image/jpeg' as const,
+      });
+    }
 
     return frames;
   } finally {
