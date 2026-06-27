@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { exigirAdmin } from '@/lib-web/auth';
@@ -5,6 +6,7 @@ import { carregarEmpresaDetalhada } from '@/lib-web/adminEmpresas';
 import { EmpresaForm } from '@/components/EmpresaForm';
 import { MembrosManager } from '@/components/MembrosManager';
 import { ToggleAtivo } from '@/components/ToggleAtivo';
+import { NotionConnectButton } from '@/components/NotionConnectButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +45,14 @@ export default async function EmpresaDetalhe({ params }: Props) {
 
       <section>
         <h2 className="mb-3 text-base font-medium">Chaves & integrações</h2>
+        <Suspense fallback={null}>
+          <NotionConnectButton
+            empresaId={empresa.id}
+            jaConectado={Boolean(empresa.notionApiKey && empresa.notionDbId)}
+            dbId={empresa.notionDbId}
+          />
+        </Suspense>
+        <div className="mt-4" />
         <EmpresaForm
           modo="editar"
           empresaId={empresa.id}
