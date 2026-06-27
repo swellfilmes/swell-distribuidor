@@ -24,6 +24,7 @@ import { agendarTodas } from './maintenance/agendarTodas';
 import { repararCopyQuebradas } from './maintenance/repararCopy';
 import { atualizarZernioAgendadosAte } from './maintenance/atualizarZernioAgendados';
 import { gerarThumbnailsPeriodo } from './maintenance/gerarThumbnailsPeriodo';
+import { cancelarAgendamento } from './maintenance/cancelarAgendamento';
 import { loadTenantConfig, listarEmpresasAtivas } from './db/tenantConfig';
 import type { TenantConfig } from './config';
 
@@ -42,6 +43,7 @@ function uso() {
   console.log('  npm run distribuir -- [--empresa <slug>] --ingerir-pasta <caminho-local> [--max N] [--apenas-listar]');
   console.log('  npm run distribuir -- [--empresa <slug>] --avaliar-copy');
   console.log('  npm run distribuir -- [--empresa <slug>] --agendar-todas');
+  console.log('  npm run distribuir -- [--empresa <slug>] --cancelar-agendamento <pageId>');
   console.log('');
   console.log('Se --empresa não for passado, usa "swell" como padrão.');
 }
@@ -151,6 +153,16 @@ async function main() {
 
   if (arg === '--agendar-todas') {
     await agendarTodas(tenant, (msg) => log('agendar', msg));
+    return;
+  }
+
+  if (arg === '--cancelar-agendamento') {
+    const pageId = argv[1];
+    if (!pageId) {
+      console.error('❌ Faltou o pageId. Uso: --cancelar-agendamento <pageId>');
+      process.exit(1);
+    }
+    await cancelarAgendamento(tenant, pageId, (msg) => log('cancelar', msg));
     return;
   }
 
