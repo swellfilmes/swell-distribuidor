@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { eq } from 'drizzle-orm';
-import { exigirAdmin } from '@/lib-web/auth';
+import { listarEmpresasDoUsuario, syncUsuarioAtual } from '@/lib-web/auth';
 import { db } from '@/src/db';
 import { empresas, tenantSecrets } from '@/src/db/schema';
 import { cifrar } from '@/src/db/encryption';
@@ -38,10 +38,9 @@ function htmlErro(titulo: string, detalhe: string): NextResponse {
 }
 
 export async function GET(req: Request) {
-  try {
-    await exigirAdmin();
-  } catch (err) {
-    return htmlErro('Sem permissão', err instanceof Error ? err.message : String(err));
+  const user = await syncUsuarioAtual();
+  if (!user) {
+    return htmlErro('Sem permissão', 'Faça login antes de concluir o OAuth.');
   }
 
   const url = new URL(req.url);
@@ -75,6 +74,17 @@ export async function GET(req: Request) {
   }
 
   const empresaId = payload.empresaId;
+
+  // Reverifica que o user logado AGORA é membro da empresa que iniciou o OAuth.
+  // Protege contra alguém roubar um cookie state e completar OAuth pra empresa
+  // alheia.
+  const minhas = await listarEmpresasDoUsuario();
+  if (!minhas.some((e) => e.id === empresaId)) {
+    return htmlErro(
+      'Empresa não é sua',
+      'Esse OAuth foi iniciado pra uma empresa que você não é membro. Inicie o fluxo de novo a partir do wizard.',
+    );
+  }
 
   const clientId = process.env.NOTION_OAUTH_CLIENT_ID;
   const clientSecret = process.env.NOTION_OAUTH_CLIENT_SECRET;

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
 import { cookies } from 'next/headers';
-import { exigirAdmin } from '@/lib-web/auth';
+import { listarEmpresasDoUsuario, syncUsuarioAtual } from '@/lib-web/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,11 +9,9 @@ const COOKIE_NOME = 'notion_oauth_state';
 const COOKIE_MAX_AGE = 60 * 10; // 10 min é mais que suficiente pra um OAuth
 
 export async function GET(req: Request) {
-  try {
-    await exigirAdmin();
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: msg }, { status: 403 });
+  const user = await syncUsuarioAtual();
+  if (!user) {
+    return NextResponse.json({ error: 'Faça login antes.' }, { status: 401 });
   }
 
   const url = new URL(req.url);
@@ -21,6 +19,17 @@ export async function GET(req: Request) {
   const empresaId = empresaIdStr ? parseInt(empresaIdStr, 10) : NaN;
   if (!Number.isFinite(empresaId)) {
     return NextResponse.json({ error: 'empresaId obrigatório (?empresaId=...)' }, { status: 400 });
+  }
+
+  // Aceita qualquer membro da empresa (owner/editor), não só admin global —
+  // assim o testador que veio do convite consegue conectar o Notion da empresa
+  // dele pelo wizard. Admin segue podendo, claro (admin é membro da Swell).
+  const minhas = await listarEmpresasDoUsuario();
+  if (!minhas.some((e) => e.id === empresaId)) {
+    return NextResponse.json(
+      { error: 'Você não tem permissão pra conectar o Notion dessa empresa.' },
+      { status: 403 },
+    );
   }
 
   const clientId = process.env.NOTION_OAUTH_CLIENT_ID;
