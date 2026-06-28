@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { exigirAdmin } from '@/lib-web/auth';
 import { listarEmpresasAdmin } from '@/lib-web/adminEmpresas';
+import { listarConvitesOnboarding } from '@/lib-web/convitesOnboarding';
 import { formatarData } from '@/lib-web/format';
+import { ConvitesOnboardingPanel } from '@/components/ConvitesOnboardingPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,11 +15,14 @@ export default async function AdminHome() {
     redirect('/app');
   }
 
-  const empresas = await listarEmpresasAdmin();
+  const [empresas, convites] = await Promise.all([
+    listarEmpresasAdmin(),
+    listarConvitesOnboarding(),
+  ]);
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <header className="mb-6 flex items-end justify-between">
+    <div className="mx-auto max-w-5xl space-y-10">
+      <header className="flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Admin · Empresas</h1>
           <p className="text-sm text-ink/60">
@@ -72,6 +77,15 @@ export default async function AdminHome() {
           </Link>
         ))}
       </div>
+
+      <section>
+        <h2 className="mb-3 text-base font-medium">Convites de onboarding</h2>
+        <p className="mb-4 text-sm text-ink/60">
+          Gera um link único pra alguém criar a empresa dele do zero (signup +
+          conectar Notion + Zernio). Cada link é de uso único.
+        </p>
+        <ConvitesOnboardingPanel inicial={convites} />
+      </section>
     </div>
   );
 }

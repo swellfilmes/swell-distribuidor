@@ -134,9 +134,43 @@ export const convites = pgTable(
   }),
 );
 
+/**
+ * Convites de onboarding: admin gera um link único (token), manda pra alguém
+ * fora do sistema. Quando essa pessoa abre o link, faz signup no Clerk e cria
+ * a empresa dela (vira owner automaticamente). Diferente de `convites` (que
+ * adiciona alguém a uma empresa existente), aqui o convite CRIA a empresa.
+ */
+export const convitesOnboarding = pgTable(
+  'convites_onboarding',
+  {
+    id: serial('id').primaryKey(),
+    token: text('token').notNull().unique(),
+    criadoPor: text('criado_por')
+      .notNull()
+      .references(() => users.id, { onDelete: 'set null' }),
+    // Dicas pré-preenchidas no wizard quando o testador abrir o link. Opcionais.
+    emailSugerido: text('email_sugerido'),
+    nomeEmpresaSugerido: text('nome_empresa_sugerido'),
+    // Quando o testador conclui o passo "criar empresa". Token vira de uso único.
+    consumidoEm: timestamp('consumido_em', { withTimezone: true }),
+    consumidoPor: text('consumido_por').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    empresaCriadaId: integer('empresa_criada_id').references(() => empresas.id, {
+      onDelete: 'set null',
+    }),
+    criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tokenIdx: index('convites_onboarding_token_idx').on(t.token),
+  }),
+);
+
 export type Empresa = typeof empresas.$inferSelect;
 export type TenantSecretsRow = typeof tenantSecrets.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
 export type NovoJob = typeof jobs.$inferInsert;
 export type Convite = typeof convites.$inferSelect;
 export type NovoConvite = typeof convites.$inferInsert;
+export type ConviteOnboarding = typeof convitesOnboarding.$inferSelect;
+export type NovoConviteOnboarding = typeof convitesOnboarding.$inferInsert;
