@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const MAX_CONCORRENTES = 3;
+const MAX_CONCORRENTES = 2;
 
 type Etapa =
   | { tipo: 'fila'; pct: 0 }

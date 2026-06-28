@@ -4,6 +4,7 @@ import { syncUsuarioAtual } from '@/lib-web/auth';
 import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
 import { db } from '@/src/db';
 import { jobs } from '@/src/db/schema';
+import { comRetryDb } from '@/src/db/retry';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,15 +26,22 @@ export async function GET(
     return NextResponse.json({ error: 'id inválido' }, { status: 400 });
   }
 
-  const linhas = await db
-    .select()
-    .from(jobs)
-    .where(and(eq(jobs.id, idNum), eq(jobs.empresaId, empresa.id)))
-    .limit(1);
+  try {
+    const linhas = await comRetryDb(() =>
+      db
+        .select()
+        .from(jobs)
+        .where(and(eq(jobs.id, idNum), eq(jobs.empresaId, empresa.id)))
+        .limit(1),
+    );
 
-  if (linhas.length === 0) {
-    return NextResponse.json({ error: 'job não encontrado' }, { status: 404 });
+    if (linhas.length === 0) {
+      return NextResponse.json({ error: 'job não encontrado' }, { status: 404 });
+    }
+
+    return NextResponse.json({ job: linhas[0] });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg }, { status: 503 });
   }
-
-  return NextResponse.json({ job: linhas[0] });
 }

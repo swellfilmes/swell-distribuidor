@@ -3,6 +3,7 @@ import { syncUsuarioAtual } from '@/lib-web/auth';
 import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
 import { db } from '@/src/db';
 import { jobs } from '@/src/db/schema';
+import { comRetryDb } from '@/src/db/retry';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,15 +37,26 @@ export async function POST(req: Request) {
     );
   }
 
-  const inserido = await db
-    .insert(jobs)
-    .values({
-      empresaId: empresa.id,
-      tipo,
-      status: 'pending',
-      payload,
-    })
-    .returning({ id: jobs.id, criadoEm: jobs.criadoEm });
+  try {
+    const inserido = await comRetryDb(() =>
+      db
+        .insert(jobs)
+        .values({
+          empresaId: empresa.id,
+          tipo,
+          status: 'pending',
+          payload,
+        })
+        .returning({ id: jobs.id, criadoEm: jobs.criadoEm }),
+    );
 
-  return NextResponse.json({ id: inserido[0].id, criadoEm: inserido[0].criadoEm });
+    return NextResponse.json({ id: inserido[0].id, criadoEm: inserido[0].criadoEm });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // Se o Neon devolveu rate-limit mesmo depois dos retries, é 503 (tente
+    // de novo) e não 500 (erro permanente) — o client pode mostrar mensagem
+    // mais útil ("muito tráfego, tenta de novo").
+    const status = /Too Many|429|rate|too many connections/i.test(msg) ? 503 : 500;
+    return NextResponse.json({ error: msg }, { status });
+  }
 }
