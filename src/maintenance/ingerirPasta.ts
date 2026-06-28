@@ -10,7 +10,7 @@ import { polirCopy } from '../brain/redator';
 import { gerarThumbnailDoVideoLocal } from '../brain/gerarThumbnail';
 import { chunkRichText } from '../lib/notionChunks';
 import { subirParaR2 } from '../storage/r2';
-import type { TenantConfig } from '../config';
+import { notionDbIdDo, type TenantConfig } from '../config';
 import type { Orientacao, PlanoPublicacao } from '../types';
 
 const exec = promisify(execFile);
@@ -78,7 +78,7 @@ async function jaIngerido(
 ): Promise<boolean> {
   const notion = notionDo(tenant);
   const resp = await notion.databases.query({
-    database_id: tenant.notionDbId,
+    database_id: notionDbIdDo(tenant),
     filter: {
       property: 'DriveFileId',
       rich_text: { equals: sourceId },
@@ -134,7 +134,7 @@ async function criarLinha(
   }
 
   await notion.pages.create({
-    parent: { database_id: tenant.notionDbId },
+    parent: { database_id: notionDbIdDo(tenant) },
     properties: props as never,
   });
 }

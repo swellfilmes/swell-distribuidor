@@ -3,7 +3,7 @@ import { publicarTudo } from '../publish/zernio';
 import { registrarResultado } from '../log/notion';
 import { reconciliarPlanoComNotion } from '../lib/reconciliarCopy';
 import { chunkRichText } from '../lib/notionChunks';
-import type { TenantConfig } from '../config';
+import { notionDbIdDo, type TenantConfig } from '../config';
 import type {
   MidiaHospedada,
   PlanoPublicacao,
@@ -55,7 +55,7 @@ async function buscarLinhasAprovadasComData(
 
   do {
     const resp = await notion.databases.query({
-      database_id: tenant.notionDbId,
+      database_id: notionDbIdDo(tenant),
       start_cursor: cursor,
       filter: {
         and: [

@@ -1,6 +1,6 @@
 import { notionDo, zernioDo } from '../lib/clients';
 import { registrarResultado } from '../log/notion';
-import type { TenantConfig } from '../config';
+import { notionDbIdDo, type TenantConfig } from '../config';
 import type { Rede, ResultadoPublicacao } from '../types';
 
 // Inclui 'Agendado' pra detectar transição Agendado → Publicado (Zernio publica
@@ -25,7 +25,7 @@ async function buscarLinhasPendentes(
 
   do {
     const resp = await notion.databases.query({
-      database_id: tenant.notionDbId,
+      database_id: notionDbIdDo(tenant),
       start_cursor: cursor,
       filter: {
         or: STATUS_PRA_REVISAR.map((nome) => ({

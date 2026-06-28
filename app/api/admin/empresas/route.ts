@@ -31,13 +31,9 @@ export async function POST(req: Request) {
   const e = await admin();
   if (e) return e;
   const body = (await req.json().catch(() => ({}))) as Partial<CriarEmpresaInput>;
-  const obrigatorios: (keyof CriarEmpresaInput)[] = [
-    'nome',
-    'slug',
-    'notionApiKey',
-    'notionDbId',
-    'zernioApiKey',
-  ];
+  // A partir de 2.7.A: só nome e slug obrigatórios. Notion/Zernio conectam depois
+  // (OAuth Notion via wizard, Zernio via form). Empresa nasce "pendente" se faltar.
+  const obrigatorios: (keyof CriarEmpresaInput)[] = ['nome', 'slug'];
   for (const k of obrigatorios) {
     if (!body[k]) {
       return NextResponse.json({ error: `Campo "${k}" obrigatório` }, { status: 400 });

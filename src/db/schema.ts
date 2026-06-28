@@ -65,10 +65,12 @@ export const tenantSecrets = pgTable('tenant_secrets', {
     .primaryKey()
     .references(() => empresas.id, { onDelete: 'cascade' }),
 
-  notionApiKeyEncrypted: text('notion_api_key_encrypted').notNull(),
-  notionDbId: text('notion_db_id').notNull(),
+  // Nullable a partir de 2.7.A: empresas novas começam sem Notion/Zernio
+  // e conectam via onboarding wizard (OAuth Notion / form Zernio).
+  notionApiKeyEncrypted: text('notion_api_key_encrypted'),
+  notionDbId: text('notion_db_id'),
 
-  zernioApiKeyEncrypted: text('zernio_api_key_encrypted').notNull(),
+  zernioApiKeyEncrypted: text('zernio_api_key_encrypted'),
   zernioYoutubeAccountId: text('zernio_youtube_account_id'),
   zernioInstagramAccountId: text('zernio_instagram_account_id'),
   zernioTiktokAccountId: text('zernio_tiktok_account_id'),

@@ -1,6 +1,6 @@
 import { notionDo } from '../lib/clients';
 import { chunkRichText } from '../lib/notionChunks';
-import type { TenantConfig } from '../config';
+import { notionDbIdDo, type TenantConfig } from '../config';
 import type { MidiaHospedada, PlanoPublicacao } from '../types';
 
 const INTERVALO_POLLING_MS = 15_000;
@@ -52,7 +52,7 @@ export async function criarLinhaAprovacao(
   }
 
   const page = await notion.pages.create({
-    parent: { database_id: tenant.notionDbId },
+    parent: { database_id: notionDbIdDo(tenant) },
     properties: props as never,
   });
 

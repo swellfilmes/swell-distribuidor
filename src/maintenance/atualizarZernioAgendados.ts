@@ -1,7 +1,7 @@
 import { contaConfiguradaPara, notionDo, zernioDo } from '../lib/clients';
 import { reconciliarPlanoComNotion } from '../lib/reconciliarCopy';
 import { chunkRichText } from '../lib/notionChunks';
-import type { TenantConfig } from '../config';
+import { notionDbIdDo, type TenantConfig } from '../config';
 import type {
   CopyPorRede,
   PlanoPublicacao,
@@ -88,7 +88,7 @@ async function buscarLinhasAteData(
 
   do {
     const resp = await notion.databases.query({
-      database_id: tenant.notionDbId,
+      database_id: notionDbIdDo(tenant),
       start_cursor: cursor,
       filter: filtroFinal as never,
       page_size: 100,

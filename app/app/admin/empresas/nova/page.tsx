@@ -20,7 +20,9 @@ export default async function NovaEmpresaPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">Nova empresa</h1>
         <p className="text-sm text-ink/60">
-          Preenche as chaves, testa, e cria. Os segredos são cifrados no banco.
+          Só nome e slug são obrigatórios. Você pode deixar Notion e Zernio em branco
+          e conectá-los depois pelo botão OAuth / wizard — os segredos são cifrados
+          no banco quando preenchidos.
         </p>
       </header>
       <EmpresaForm modo="criar" />

@@ -1,5 +1,5 @@
 import { notionDo } from '@/src/lib/clients';
-import type { TenantConfig } from '@/src/config';
+import { notionDbIdDo, type TenantConfig } from '@/src/config';
 import type {
   Orientacao,
   PlanoPublicacao,
@@ -218,7 +218,7 @@ export async function listarPostsDoNotion(
   const limit = Math.min(opts.limit ?? 100, 100);
 
   const resp = await notion.databases.query({
-    database_id: tenant.notionDbId,
+    database_id: notionDbIdDo(tenant),
     filter: filter as never,
     sorts: montarSorts(opts.sort, opts.dir) as never,
     page_size: limit,

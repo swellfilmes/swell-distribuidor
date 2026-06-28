@@ -36,7 +36,8 @@ export interface EmpresaDetalhada {
   nome: string;
   ativo: boolean;
   criadaEm: Date;
-  // segredos descifrados pra exibir (admin only)
+  // Segredos descifrados pra exibir (admin only). Strings vazias quando não preenchidos
+  // (empresa em onboarding ainda sem conectar Notion/Zernio).
   notionApiKey: string;
   notionDbId: string;
   zernioApiKey: string;
@@ -109,9 +110,9 @@ export async function carregarEmpresaDetalhada(id: number): Promise<EmpresaDetal
     nome: e.nome,
     ativo: e.ativo,
     criadaEm: e.criadaEm,
-    notionApiKey: decifrar(s.notionApiKeyEncrypted),
-    notionDbId: s.notionDbId,
-    zernioApiKey: decifrar(s.zernioApiKeyEncrypted),
+    notionApiKey: s.notionApiKeyEncrypted ? decifrar(s.notionApiKeyEncrypted) : '',
+    notionDbId: s.notionDbId ?? '',
+    zernioApiKey: s.zernioApiKeyEncrypted ? decifrar(s.zernioApiKeyEncrypted) : '',
     zernioYoutubeAccountId: s.zernioYoutubeAccountId,
     zernioInstagramAccountId: s.zernioInstagramAccountId,
     zernioTiktokAccountId: s.zernioTiktokAccountId,
@@ -124,9 +125,11 @@ export async function carregarEmpresaDetalhada(id: number): Promise<EmpresaDetal
 export interface CriarEmpresaInput {
   nome: string;
   slug: string;
-  notionApiKey: string;
-  notionDbId: string;
-  zernioApiKey: string;
+  // Todas as integrações opcionais a partir de 2.7.A: empresa em onboarding começa
+  // só com nome+slug e conecta Notion/Zernio depois via wizard.
+  notionApiKey?: string;
+  notionDbId?: string;
+  zernioApiKey?: string;
   zernioYoutubeAccountId?: string;
   zernioInstagramAccountId?: string;
   zernioTiktokAccountId?: string;
@@ -144,9 +147,9 @@ export async function criarEmpresa(input: CriarEmpresaInput): Promise<{ id: numb
   const empresaId = r[0].id;
   await db.insert(tenantSecrets).values({
     empresaId,
-    notionApiKeyEncrypted: cifrar(input.notionApiKey),
-    notionDbId: input.notionDbId,
-    zernioApiKeyEncrypted: cifrar(input.zernioApiKey),
+    notionApiKeyEncrypted: input.notionApiKey ? cifrar(input.notionApiKey) : null,
+    notionDbId: input.notionDbId ?? null,
+    zernioApiKeyEncrypted: input.zernioApiKey ? cifrar(input.zernioApiKey) : null,
     zernioYoutubeAccountId: input.zernioYoutubeAccountId ?? null,
     zernioInstagramAccountId: input.zernioInstagramAccountId ?? null,
     zernioTiktokAccountId: input.zernioTiktokAccountId ?? null,

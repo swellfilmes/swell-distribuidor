@@ -6,7 +6,7 @@ import { extrairFrames, extrairFrameHiRes } from '../ingest/extrairFrames';
 import { avaliarFramesParaThumbnail } from '../brain/thumbnailAgent';
 import { subirParaR2 } from '../storage/r2';
 import { chunkRichText } from '../lib/notionChunks';
-import type { TenantConfig } from '../config';
+import { notionDbIdDo, type TenantConfig } from '../config';
 import type { PlanoPublicacao } from '../types';
 
 interface LinhaPraThumbnail {
@@ -65,7 +65,7 @@ async function buscarLinhasPeriodo(
 
   do {
     const resp = await notion.databases.query({
-      database_id: tenant.notionDbId,
+      database_id: notionDbIdDo(tenant),
       start_cursor: cursor,
       filter: {
         and: [

@@ -1,7 +1,7 @@
 import { notionDo } from '../lib/clients';
 import { avaliarECorrigir } from '../brain/avaliador';
 import { chunkRichText } from '../lib/notionChunks';
-import type { TenantConfig } from '../config';
+import { notionDbIdDo, type TenantConfig } from '../config';
 import type { PlanoPublicacao } from '../types';
 
 interface LinhaPraAvaliar {
@@ -33,7 +33,7 @@ async function buscarLinhasAguardando(
 
   do {
     const resp = await notion.databases.query({
-      database_id: tenant.notionDbId,
+      database_id: notionDbIdDo(tenant),
       start_cursor: cursor,
       filter: {
         property: 'Status',

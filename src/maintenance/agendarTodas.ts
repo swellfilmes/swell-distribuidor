@@ -1,6 +1,6 @@
 import { notionDo } from '../lib/clients';
 import { gerarCronograma, type ItemPraAgendar } from '../brain/agendador';
-import type { TenantConfig } from '../config';
+import { notionDbIdDo, type TenantConfig } from '../config';
 import type { PlanoPublicacao, Rede } from '../types';
 
 interface LinhaSemData {
@@ -27,7 +27,7 @@ async function buscarLinhasSemData(
 
   do {
     const resp = await notion.databases.query({
-      database_id: tenant.notionDbId,
+      database_id: notionDbIdDo(tenant),
       start_cursor: cursor,
       filter: {
         and: [

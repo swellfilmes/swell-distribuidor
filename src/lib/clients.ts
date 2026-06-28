@@ -7,6 +7,12 @@ const zernioCache = new WeakMap<TenantConfig, Zernio>();
 
 /** Cliente Notion da empresa (memoizado por objeto TenantConfig). */
 export function notionDo(tenant: TenantConfig): NotionClient {
+  if (!tenant.notionApiKey) {
+    throw new Error(
+      `Empresa "${tenant.slug}" ainda não conectou o Notion. ` +
+        `Use o wizard de onboarding ou o botão "Conectar Notion (OAuth)" no admin.`,
+    );
+  }
   let c = notionCache.get(tenant);
   if (!c) {
     c = new NotionClient({ auth: tenant.notionApiKey });
@@ -17,6 +23,12 @@ export function notionDo(tenant: TenantConfig): NotionClient {
 
 /** Cliente Zernio da empresa (memoizado por objeto TenantConfig). */
 export function zernioDo(tenant: TenantConfig): Zernio {
+  if (!tenant.zernioApiKey) {
+    throw new Error(
+      `Empresa "${tenant.slug}" ainda não conectou o Zernio. ` +
+        `Cole a API key no wizard de onboarding ou no admin.`,
+    );
+  }
   let c = zernioCache.get(tenant);
   if (!c) {
     c = new Zernio({ apiKey: tenant.zernioApiKey });

@@ -7,7 +7,7 @@ import { polirCopy } from '../brain/redator';
 import { avaliarECorrigir } from '../brain/avaliador';
 import { extrairFrames } from '../ingest/extrairFrames';
 import { chunkRichText } from '../lib/notionChunks';
-import type { TenantConfig } from '../config';
+import { notionDbIdDo, type TenantConfig } from '../config';
 import type {
   MetaArquivo,
   Orientacao,
@@ -79,7 +79,7 @@ async function buscarLinhasQuebradas(
 
   do {
     const resp = await notion.databases.query({
-      database_id: tenant.notionDbId,
+      database_id: notionDbIdDo(tenant),
       start_cursor: cursor,
       filter: { property: 'Status', select: { equals: 'Aguardando' } },
       page_size: 100,
