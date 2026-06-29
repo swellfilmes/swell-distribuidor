@@ -2,6 +2,7 @@ import { eq, and, isNull, sql } from 'drizzle-orm';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/src/db/index';
 import { users, empresas, empresaUsers, convites } from '@/src/db/schema';
+import { comRetryDb } from '@/src/db/retry';
 
 export interface UsuarioApp {
   id: string;
@@ -45,14 +46,16 @@ export async function syncUsuarioAtual(): Promise<UsuarioApp | null> {
   const isAdmin = !!adminEmail && emailLower === adminEmail;
   const role: 'admin' | 'member' = isAdmin ? 'admin' : 'member';
 
-  // Upsert do usuário
-  await db
-    .insert(users)
-    .values({ id: userId, email, nome, role })
-    .onConflictDoUpdate({
-      target: users.id,
-      set: { email, nome, role },
-    });
+  // Upsert do usuário — com retry pra absorver rate-limit do Neon em rajadas.
+  await comRetryDb(() =>
+    db
+      .insert(users)
+      .values({ id: userId, email, nome, role })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: { email, nome, role },
+      }),
+  );
 
   // Admin → garante membership na Swell como 'owner'
   if (isAdmin) {
@@ -98,16 +101,18 @@ export async function listarEmpresasDoUsuario(): Promise<EmpresaResumo[]> {
   const { userId } = await auth();
   if (!userId) return [];
 
-  const linhas = await db
-    .select({
-      id: empresas.id,
-      slug: empresas.slug,
-      nome: empresas.nome,
-      role: empresaUsers.role,
-    })
-    .from(empresaUsers)
-    .innerJoin(empresas, eq(empresas.id, empresaUsers.empresaId))
-    .where(and(eq(empresaUsers.userId, userId), eq(empresas.ativo, true)));
+  const linhas = await comRetryDb(() =>
+    db
+      .select({
+        id: empresas.id,
+        slug: empresas.slug,
+        nome: empresas.nome,
+        role: empresaUsers.role,
+      })
+      .from(empresaUsers)
+      .innerJoin(empresas, eq(empresas.id, empresaUsers.empresaId))
+      .where(and(eq(empresaUsers.userId, userId), eq(empresas.ativo, true))),
+  );
 
   return linhas.map((l) => ({
     id: l.id,

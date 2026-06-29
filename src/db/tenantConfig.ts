@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from './index';
 import { empresas, tenantSecrets } from './schema';
 import { decifrar } from './encryption';
+import { comRetryDb } from './retry';
 import type { TenantConfig } from '../config';
 
 const cache = new Map<string, TenantConfig>();
@@ -11,12 +12,14 @@ export async function loadTenantConfig(slug: string): Promise<TenantConfig> {
   const hit = cache.get(slug);
   if (hit) return hit;
 
-  const linhas = await db
-    .select()
-    .from(empresas)
-    .innerJoin(tenantSecrets, eq(empresas.id, tenantSecrets.empresaId))
-    .where(eq(empresas.slug, slug))
-    .limit(1);
+  const linhas = await comRetryDb(() =>
+    db
+      .select()
+      .from(empresas)
+      .innerJoin(tenantSecrets, eq(empresas.id, tenantSecrets.empresaId))
+      .where(eq(empresas.slug, slug))
+      .limit(1),
+  );
 
   if (linhas.length === 0) {
     throw new Error(
