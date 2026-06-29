@@ -1,7 +1,9 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { syncUsuarioAtual } from '@/lib-web/auth';
 import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
 import { loadTenantConfig } from '@/src/db/tenantConfig';
+import { temNotionConectado } from '@/src/config';
 import {
   listarPostsDoNotion,
   clientesDaEmpresa,
@@ -77,22 +79,44 @@ export default async function PostsPage({ searchParams }: Props) {
 
   const tenant = await loadTenantConfig(empresa.slug);
 
-  let posts: PostListado[];
-  let erro: string | null = null;
-  try {
-    posts = await listarPostsDoNotion(tenant, { ...filtros, ...ordem });
-  } catch (e) {
-    posts = [];
-    erro = e instanceof Error ? e.message : String(e);
+  // Empresa em onboarding (sem Notion) — não tenta query Notion, mostra CTA.
+  if (!temNotionConectado(tenant)) {
+    return (
+      <div className="mx-auto max-w-2xl rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+        <div className="mb-2 font-medium">Notion ainda não conectado</div>
+        <p className="mb-4">
+          A empresa <b>{empresa.nome}</b> ainda não tem a database do Notion
+          conectada. Termine o onboarding antes de ver os posts.
+        </p>
+        <a
+          href="/app/onboarding"
+          className="inline-block rounded-md bg-ink px-3 py-2 text-xs font-medium text-cream hover:opacity-90"
+        >
+          Ir pro wizard de onboarding →
+        </a>
+      </div>
+    );
   }
 
-  // Lista de clientes: cacheada em memória (TTL 10min) — não custa query Notion
-  // a cada page load. Invalidada quando criar/editar empresa via outras rotas.
+  // Paraleliza as duas queries — antes eram seriais (~2x mais devagar).
+  // clientesDaEmpresa é cacheada (TTL 10min) então normalmente é instantânea.
+  let posts: PostListado[];
   let listaClientes: string[];
+  let erro: string | null = null;
   try {
-    listaClientes = await clientesDaEmpresa(tenant);
-  } catch {
+    const [postsRes, clientesRes] = await Promise.all([
+      listarPostsDoNotion(tenant, { ...filtros, ...ordem }).catch((e) => {
+        erro = e instanceof Error ? e.message : String(e);
+        return [] as PostListado[];
+      }),
+      clientesDaEmpresa(tenant).catch(() => [] as string[]),
+    ]);
+    posts = postsRes;
+    listaClientes = clientesRes;
+  } catch (e) {
+    posts = [];
     listaClientes = [];
+    erro = e instanceof Error ? e.message : String(e);
   }
 
   return (
@@ -113,13 +137,15 @@ export default async function PostsPage({ searchParams }: Props) {
         </div>
       )}
 
-      <PostsTable
-        posts={posts}
-        clientes={listaClientes}
-        filtros={filtros}
-        ordem={ordem}
-        geradoEm={new Date().toISOString()}
-      />
+      <Suspense fallback={<div className="text-sm text-ink/50">Carregando tabela...</div>}>
+        <PostsTable
+          posts={posts}
+          clientes={listaClientes}
+          filtros={filtros}
+          ordem={ordem}
+          geradoEm={new Date().toISOString()}
+        />
+      </Suspense>
     </div>
   );
 }
