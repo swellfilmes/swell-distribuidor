@@ -1,6 +1,6 @@
 import { notionDo } from '@/src/lib/clients';
 import { chunkRichText } from '@/src/lib/notionChunks';
-import type { TenantConfig } from '@/src/config';
+import type { TenantConfig } from '@/src/tenant';
 import type { PlanoPublicacao, Rede } from '@/src/types';
 import {
   carregarPost,

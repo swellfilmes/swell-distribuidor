@@ -34,57 +34,29 @@ const globalSchema = z.object({
 const parsed = globalSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('\n❌ Configuração global inválida no .env:\n');
-  for (const issue of parsed.error.issues) {
-    console.error(`  - ${issue.message}`);
-  }
-  console.error('\nDica: copie o `.env.example` para `.env` e preencha as chaves.\n');
-  process.exit(1);
+  const detalhes = parsed.error.issues.map((i) => `  - ${i.message}`).join('\n');
+  // Não chamamos process.exit aqui porque esse módulo acaba sendo importado
+  // por client components (via lib-web/notionData → src/config) quando Turbopack
+  // resolve a árvore de tipos+valores. process.exit no client polyfill é
+  // undefined e gera "m.default.exit is not a function" no browser. throw funciona:
+  // no server (boot CLI/SSR), o erro propaga e o processo morre igual; no client,
+  // só lança se realmente faltar env (que não rola pq client nem lê .env).
+  throw new Error(
+    `Configuração global inválida no .env:\n${detalhes}\n\n` +
+      `Dica: copie o \`.env.example\` para \`.env\` e preencha as chaves.`,
+  );
 }
 
 export const globalConfig = parsed.data;
 export type GlobalConfig = typeof globalConfig;
 
-/**
- * Config carregado por empresa (descifrado em memória, nunca persistido).
- * Cada chamada que toca Notion ou Zernio recebe um `TenantConfig`.
- */
-export interface TenantConfig {
-  empresaId: number;
-  slug: string;
-  nome: string;
-  // Opcionais a partir de 2.7.A: empresas em onboarding podem não ter integrações ainda.
-  // Quem usa esses campos (notionDo/zernioDo em src/lib/clients) lança erro claro se nulo.
-  notionApiKey?: string;
-  notionDbId?: string;
-  zernioApiKey?: string;
-  zernioYoutubeAccountId?: string;
-  zernioInstagramAccountId?: string;
-  zernioTiktokAccountId?: string;
-  zernioLinkedinAccountId?: string;
-}
-
-/** Helpers pra checar se uma empresa já tem Notion / Zernio prontos. */
-export function temNotionConectado(t: TenantConfig): boolean {
-  return Boolean(t.notionApiKey && t.notionDbId);
-}
-export function temZernioConectado(t: TenantConfig): boolean {
-  return Boolean(t.zernioApiKey);
-}
-export function integracoesCompletas(t: TenantConfig): boolean {
-  return temNotionConectado(t) && temZernioConectado(t);
-}
-
-/**
- * Retorna o notionDbId da empresa ou lança erro claro se ainda não conectou.
- * Usar em todos os lugares que precisam `database_id` direto.
- */
-export function notionDbIdDo(t: TenantConfig): string {
-  if (!t.notionDbId) {
-    throw new Error(
-      `Empresa "${t.slug}" ainda não conectou o Notion (sem database_id). ` +
-        `Conecte via wizard de onboarding antes de rodar essa operação.`,
-    );
-  }
-  return t.notionDbId;
-}
+// TenantConfig + helpers moveram pra ./tenant pra evitar que client components
+// puxem `globalConfig` (que lê process.env e quebra no client). Re-exportamos
+// aqui pra retrocompat dos imports antigos `from '@/src/config'`.
+export {
+  type TenantConfig,
+  temNotionConectado,
+  temZernioConectado,
+  integracoesCompletas,
+  notionDbIdDo,
+} from './tenant';

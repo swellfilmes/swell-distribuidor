@@ -1,5 +1,5 @@
 import { notionDo } from '@/src/lib/clients';
-import { notionDbIdDo, type TenantConfig } from '@/src/config';
+import { notionDbIdDo, type TenantConfig } from '@/src/tenant';
 import type {
   Orientacao,
   PlanoPublicacao,
