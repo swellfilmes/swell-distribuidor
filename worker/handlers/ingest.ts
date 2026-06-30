@@ -10,18 +10,25 @@ import { polirCopy } from '@/src/brain/redator';
 import { gerarThumbnailDoVideoLocal } from '@/src/brain/gerarThumbnail';
 import { criarLinhaAprovacao } from '@/src/approval/notion';
 import { loadTenantConfigById } from '@/src/db/tenantConfig';
-import type { Orientacao } from '@/src/types';
+import { filtrarRedesPorTamanho } from '@/src/brain/limitesRede';
+import type { Orientacao, Rede } from '@/src/types';
 
 const exec = promisify(execFile);
 
-async function detectarOrientacao(caminhoVideo: string): Promise<Orientacao> {
+// Vídeos com tamanho >= LIMIAR_STREAM_BYTES não são baixados pro /tmp — ffmpeg
+// lê direto da URL R2 via range requests. Pra 1GB+ no Railway hobby tier
+// (RAM ~512MB-1GB), baixar inteiro estoura OOM ou disco. Streaming usa só
+// memória dos chunks necessários (poucos MB).
+const LIMIAR_STREAM_BYTES = 200 * 1024 * 1024;
+
+async function detectarOrientacao(input: string): Promise<Orientacao> {
   try {
     const { stdout } = await exec('ffprobe', [
       '-v', 'error',
       '-select_streams', 'v:0',
       '-show_entries', 'stream=width,height',
       '-of', 'csv=p=0',
-      caminhoVideo,
+      input,
     ]);
     const [wStr, hStr] = stdout.trim().split(',');
     const w = parseInt(wStr, 10);
@@ -36,6 +43,9 @@ export interface PayloadIngest {
   chaveR2: string;
   urlPublica: string;
   nomeArquivo: string;
+  /** Tamanho em bytes (browser passa via FileReader). Usado pra decidir
+   * stream vs download e pra filtrar redes que não aceitam o tamanho. */
+  tamanhoBytes?: number;
   /**
    * Carrossel: imagens EXTRAS (a 1ª fica nos campos acima). Cada uma já foi
    * uploaded no R2 pelo client antes de criar o job. Worker baixa todas pra
@@ -57,14 +67,36 @@ export async function processarIngest(
   payload: PayloadIngest,
   log: (msg: string) => void,
 ): Promise<ResultadoIngest> {
-  log(`⬇️  baixando ${payload.chaveR2} do R2...`);
   const tenant = await loadTenantConfigById(empresaId);
-  const baixado = await baixarDoR2(payload.chaveR2, payload.nomeArquivo);
+  const ehFoto = ehImagem(payload.nomeArquivo);
+  const ehCarrossel = (payload.extras?.length ?? 0) > 0;
+  const tamanho = payload.tamanhoBytes ?? 0;
 
-  // Carrossel: baixa também os extras pra usar como frames adicionais no cérebro.
+  // Pra vídeo grande, NÃO baixa — ffmpeg lê direto da URL via range requests.
+  // Pra imagem ou vídeo pequeno, baixa pro /tmp (mais rápido em sucessivas
+  // chamadas de ffmpeg pra extrair 6 frames + thumbnail).
+  const streamarDaUrl = !ehFoto && !ehCarrossel && tamanho >= LIMIAR_STREAM_BYTES;
+  let baixado: Awaited<ReturnType<typeof baixarDoR2>> | null = null;
+  let inputFfmpeg: string;
+  if (streamarDaUrl) {
+    log(`vídeo grande (${(tamanho / 1024 / 1024).toFixed(0)}MB) — ffmpeg lê direto da URL R2.`);
+    inputFfmpeg = payload.urlPublica;
+  } else if (ehFoto || tamanho > 0) {
+    log(`baixando ${payload.chaveR2} do R2...`);
+    baixado = await baixarDoR2(payload.chaveR2, payload.nomeArquivo);
+    inputFfmpeg = baixado.caminho;
+  } else {
+    // Sem tamanho (payload antigo): default ao comportamento anterior.
+    log(`baixando ${payload.chaveR2} do R2 (sem tamanho conhecido)...`);
+    baixado = await baixarDoR2(payload.chaveR2, payload.nomeArquivo);
+    inputFfmpeg = baixado.caminho;
+  }
+
+  // Carrossel sempre baixa (imagens são pequenas, e ffmpeg/sharp precisa do
+  // arquivo pra ler como frame).
   const baixadosExtras: Array<Awaited<ReturnType<typeof baixarDoR2>>> = [];
   if (payload.extras && payload.extras.length > 0) {
-    log(`⬇️  baixando ${payload.extras.length} imagem(ns) extra(s) do carrossel...`);
+    log(`baixando ${payload.extras.length} imagem(ns) extra(s) do carrossel...`);
     for (const ex of payload.extras) {
       const b = await baixarDoR2(ex.chaveR2, ex.nomeArquivo);
       baixadosExtras.push(b);
@@ -72,14 +104,13 @@ export async function processarIngest(
   }
 
   try {
-    const ehFoto = ehImagem(payload.nomeArquivo);
-    const ehCarrossel = (payload.extras?.length ?? 0) > 0;
-    log(`🔍 ffprobe pra orientação + ${ehCarrossel ? `lendo ${1 + (payload.extras?.length ?? 0)} imagens (carrossel)` : ehFoto ? 'lendo imagem (foto)' : 'extração de 6 frames'}...`);
+    log(`ffprobe pra orientação + ${ehCarrossel ? `lendo ${1 + (payload.extras?.length ?? 0)} imagens (carrossel)` : ehFoto ? 'lendo imagem (foto)' : 'extração de 6 frames'}...`);
+    const inputPrincipal = baixado?.caminho ?? inputFfmpeg;
     const [orientacao, framePrincipal] = await Promise.all([
-      detectarOrientacao(baixado.caminho),
+      detectarOrientacao(inputFfmpeg),
       ehFoto
-        ? lerImagemComoFrame(baixado.caminho)
-        : extrairFrames(baixado.caminho, 6).then((fs) => fs),
+        ? lerImagemComoFrame(inputPrincipal)
+        : extrairFrames(inputFfmpeg, 6).then((fs) => fs),
     ]);
     const frames = ehCarrossel
       ? [
@@ -90,29 +121,41 @@ export async function processarIngest(
         ? framePrincipal
         : [framePrincipal];
 
-    log('🧠 cérebro: inferindo cliente/tipo + gerando copy...');
+    log('cérebro: inferindo cliente/tipo + gerando copy...');
     const planoBruto = await gerarPlanoComInferencia(
       {
         pastaPaiNome: 'upload-web',
         caminhoPastas: 'upload-web',
         nomeArquivo: payload.nomeArquivo,
         orientacao,
-        caminhoLocal: baixado.caminho,
+        caminhoLocal: inputPrincipal,
       },
       frames,
     );
-    // Carrossel: força tipo na meta (cérebro pode chutar errado em batch)
     if (ehCarrossel) {
       planoBruto.meta.tipo = 'carrossel';
     }
+
+    // Filtra redes que não aceitam o tamanho do vídeo (ex: TikTok >287MB).
+    if (!ehFoto && tamanho > 0) {
+      const { redes: redesFiltradas, removidas } = filtrarRedesPorTamanho(
+        planoBruto.redes as Rede[],
+        tamanho,
+      );
+      if (removidas.length > 0) {
+        log(`redes removidas por tamanho (${(tamanho / 1024 / 1024).toFixed(0)}MB): ${removidas.join(', ')}`);
+        planoBruto.redes = redesFiltradas;
+        planoBruto.copy = planoBruto.copy.filter((c) => redesFiltradas.includes(c.rede));
+      }
+    }
+
     log(`   cliente=${planoBruto.meta.cliente} tipo=${planoBruto.meta.tipo} redes=${planoBruto.redes.join(',')}`);
 
-    log('✍️  redator: polindo no tom Swell...');
+    log('redator: polindo no tom Swell...');
     const planoPolido = await polirCopy(planoBruto, frames);
 
     let plano = planoPolido;
     if (ehCarrossel) {
-      // Anexa URLs das imagens extras no plano pra publicação juntá-las no Zernio.
       plano = {
         ...planoPolido,
         mediasExtras: (payload.extras ?? []).map((e) => ({
@@ -120,8 +163,10 @@ export async function processarIngest(
           chaveR2: e.chaveR2,
         })),
       };
-      log(`🎠 carrossel: ${plano.mediasExtras?.length ?? 0} mídia(s) extra(s) anexada(s) ao plano.`);
-    } else if (!ehFoto) {
+      log(`carrossel: ${plano.mediasExtras?.length ?? 0} mídia(s) extra(s) anexada(s) ao plano.`);
+    } else if (!ehFoto && !streamarDaUrl && baixado) {
+      // Thumbnail só roda quando temos o arquivo local (extrair frames hi-res
+      // pra subir no R2). Vídeo grande streamed da URL: pula thumbnail.
       try {
         const thumb = await gerarThumbnailDoVideoLocal(tenant, baixado.caminho, planoPolido, (msg) =>
           log(`   ${msg}`),
@@ -129,19 +174,21 @@ export async function processarIngest(
         plano = { ...planoPolido, thumbnailUrl: thumb.thumbnailUrl };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        log(`⚠️  thumbnail falhou (sigo sem): ${msg}`);
+        log(`thumbnail falhou (sigo sem): ${msg}`);
       }
+    } else if (streamarDaUrl) {
+      log('vídeo grande streamed — pulo agent de thumbnail (Zernio gera uma da URL).');
     } else {
-      log('🖼️  foto: imagem é a própria thumb, pulo agent de thumbnail.');
+      log('foto: imagem é a própria thumb, pulo agent de thumbnail.');
     }
 
-    log('📝 criando linha no Notion...');
+    log('criando linha no Notion...');
     const linha = await criarLinhaAprovacao(tenant, plano, {
       urlPublica: payload.urlPublica,
       chaveR2: payload.chaveR2,
     });
 
-    log(`✅ pronto: ${linha.url}`);
+    log(`pronto: ${linha.url}`);
 
     return {
       pageId: linha.pageId,
@@ -151,7 +198,7 @@ export async function processarIngest(
       thumbnailUrl: plano.thumbnailUrl,
     };
   } finally {
-    await baixado.limpar().catch(() => {});
+    if (baixado) await baixado.limpar().catch(() => {});
     await Promise.all(baixadosExtras.map((b) => b.limpar().catch(() => {})));
     void path;
   }

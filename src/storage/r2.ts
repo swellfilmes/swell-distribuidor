@@ -66,7 +66,9 @@ export async function gerarUrlAssinadaUpload(
     ContentType: contentType,
   });
 
-  const url = await getSignedUrl(s3, command, { expiresIn: 60 * 10 });
+  // TTL 1h: vídeos grandes (até 5GB) em conexão residencial podem levar
+  // 20-40min de upload. 10min do TTL antigo estourava no meio.
+  const url = await getSignedUrl(s3, command, { expiresIn: 60 * 60 });
   const baseLimpa = globalConfig.R2_PUBLIC_BASE_URL.replace(/\/$/, '');
   const urlPublica = `${baseLimpa}/${chaveR2}`;
   return { url, chaveR2, urlPublica };

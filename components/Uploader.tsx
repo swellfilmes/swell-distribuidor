@@ -4,8 +4,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const MAX_CONCORRENTES = 2;
-const TAMANHO_MAX_BYTES = 500 * 1024 * 1024; // 500MB — limite pra Vercel function presign + R2 PUT
-const POLLING_TIMEOUT_MS = 10 * 60 * 1000; // 10 min — se job não evoluir, mostra aviso
+// Cap 5GB cobre vídeos longos pro YouTube. R2 PUT aguenta até 5TB single-shot.
+// Pra vídeos >500MB avisamos no UI sobre limites das outras redes (TikTok ~287MB,
+// Instagram Reels 4GB) — o cérebro depois filtra automaticamente as redes
+// que não vão aceitar aquele tamanho.
+const TAMANHO_MAX_BYTES = 5 * 1024 * 1024 * 1024;
+const TAMANHO_AVISO_BYTES = 500 * 1024 * 1024;
+const POLLING_TIMEOUT_MS = 20 * 60 * 1000; // 20 min — vídeo grande pode demorar mais no worker
 
 type Etapa =
   | { tipo: 'fila'; pct: 0 }
@@ -224,6 +229,7 @@ export function Uploader() {
             chaveR2: presign.chaveR2,
             urlPublica: presign.urlPublica,
             nomeArquivo: arquivo.name,
+            tamanhoBytes: arquivo.size,
             dedupeKey: presign.dedupeKey,
             ...(extrasUploaded.length > 0 ? { extras: extrasUploaded } : {}),
           },
@@ -251,15 +257,37 @@ export function Uploader() {
 
   function adicionarArquivos(arquivos: FileList | File[]) {
     const lista = Array.from(arquivos).filter(ehMidia);
-    // Bloqueia arquivos acima de TAMANHO_MAX_BYTES com aviso amigável.
+    const fmtTam = (b: number) =>
+      b >= 1024 * 1024 * 1024
+        ? `${(b / 1024 / 1024 / 1024).toFixed(1)} GB`
+        : `${(b / 1024 / 1024).toFixed(0)} MB`;
+
+    // Bloqueia arquivos acima de 5GB (limite YouTube ainda OK).
     const grandes = lista.filter((a) => a.size > TAMANHO_MAX_BYTES);
     if (grandes.length > 0) {
-      const nomes = grandes.map((a) => `${a.name} (${(a.size / 1024 / 1024).toFixed(0)}MB)`).join(', ');
+      const nomes = grandes.map((a) => `${a.name} (${fmtTam(a.size)})`).join(', ');
       alert(
-        `Arquivo(s) acima de ${(TAMANHO_MAX_BYTES / 1024 / 1024).toFixed(0)}MB foram ignorados:\n\n${nomes}\n\nDica: comprime vídeos longos antes de subir (Handbrake, ffmpeg).`,
+        `Arquivo(s) acima de ${fmtTam(TAMANHO_MAX_BYTES)} foram ignorados:\n\n${nomes}\n\nMáximo: 5 GB. Comprima antes (Handbrake, ffmpeg) ou divida em partes.`,
       );
     }
     const aceitos = lista.filter((a) => a.size <= TAMANHO_MAX_BYTES);
+
+    // Aviso pra vídeos > 500MB: cérebro vai filtrar redes que não aceitam
+    // aquele tamanho. Só informativo, não bloqueia.
+    const enormes = aceitos.filter((a) => a.size > TAMANHO_AVISO_BYTES && !ehImagemFile(a));
+    if (enormes.length > 0) {
+      const nomes = enormes.map((a) => `${a.name} (${fmtTam(a.size)})`).join(', ');
+      const aviso =
+        `Vídeo(s) grande(s):\n${nomes}\n\n` +
+        `Limites por rede:\n` +
+        `• TikTok: até 287 MB\n` +
+        `• Instagram Reels: até 4 GB\n` +
+        `• YouTube: até 5 GB (até 256 GB pra conta verificada)\n\n` +
+        `A IA vai filtrar automaticamente as redes que não aceitam esse tamanho.`;
+      // eslint-disable-next-line no-console
+      console.info(aviso);
+      // Sem alert pra não interromper; o aviso fica no card do item depois.
+    }
     const existentes = new Set(itensRef.current.map((it) => it.key));
 
     // Separa em imagens vs vídeos. Imagens dropped no mesmo batch agrupam
@@ -470,7 +498,7 @@ export function Uploader() {
           Arrasta vídeos ou fotos aqui ou clica pra escolher
         </p>
         <p className="mt-1 text-xs text-fg-muted/55">
-          MP4 / MOV / WEBM / JPG / PNG / WEBP — máx. {MAX_CONCORRENTES} subindo ao mesmo tempo
+          MP4 / MOV / WEBM até 5 GB · JPG / PNG / WEBP — máx. {MAX_CONCORRENTES} subindo ao mesmo tempo
         </p>
         <input
           ref={inputRef}
