@@ -41,6 +41,23 @@ function chaveArquivo(arquivo: File): string {
   return `${arquivo.name}::${arquivo.size}::${arquivo.lastModified}`;
 }
 
+/** Deduz MIME por extensão quando o browser não sabe (raro, mas acontece). */
+function mimeFallback(arquivo: File): string {
+  if (arquivo.type) return arquivo.type;
+  const nome = arquivo.name.toLowerCase();
+  if (nome.endsWith('.png')) return 'image/png';
+  if (nome.endsWith('.webp')) return 'image/webp';
+  if (nome.endsWith('.jpg') || nome.endsWith('.jpeg')) return 'image/jpeg';
+  if (nome.endsWith('.mov')) return 'video/quicktime';
+  if (nome.endsWith('.webm')) return 'video/webm';
+  return 'video/mp4';
+}
+
+function ehMidia(arquivo: File): boolean {
+  const t = mimeFallback(arquivo);
+  return t.startsWith('video/') || t.startsWith('image/');
+}
+
 export function Uploader() {
   const router = useRouter();
   const [itens, setItens] = useState<ItemUpload[]>([]);
@@ -66,7 +83,7 @@ export function Uploader() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           nomeArquivo: arquivo.name,
-          contentType: arquivo.type || 'video/mp4',
+          contentType: mimeFallback(arquivo),
           tamanhoBytes: arquivo.size,
           lastModified: arquivo.lastModified,
         }),
@@ -101,7 +118,7 @@ export function Uploader() {
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', presign.url);
-        xhr.setRequestHeader('content-type', arquivo.type || 'video/mp4');
+        xhr.setRequestHeader('content-type', mimeFallback(arquivo));
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable) {
             const pct = Math.round((e.loaded / e.total) * 100);
@@ -167,7 +184,7 @@ export function Uploader() {
     const novos: ItemUpload[] = [];
     const existentes = new Set(itensRef.current.map((it) => it.key));
     for (const arquivo of Array.from(arquivos)) {
-      if (!arquivo.type.startsWith('video/')) continue;
+      if (!ehMidia(arquivo)) continue;
       const key = chaveArquivo(arquivo);
       if (existentes.has(key)) continue;
       existentes.add(key);
@@ -329,12 +346,12 @@ export function Uploader() {
           Arrasta um ou vários vídeos aqui ou clica pra escolher
         </p>
         <p className="mt-1 text-xs text-ink/55">
-          MP4 / MOV / WEBM — máx. {MAX_CONCORRENTES} subindo ao mesmo tempo
+          MP4 / MOV / WEBM / JPG / PNG / WEBP — máx. {MAX_CONCORRENTES} subindo ao mesmo tempo
         </p>
         <input
           ref={inputRef}
           type="file"
-          accept="video/*"
+          accept="video/*,image/jpeg,image/png,image/webp"
           multiple
           className="hidden"
           onChange={(e) => {
