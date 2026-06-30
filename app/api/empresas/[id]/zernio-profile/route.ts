@@ -4,7 +4,7 @@ import { listarEmpresasDoUsuario, syncUsuarioAtual } from '@/lib-web/auth';
 import { db } from '@/src/db';
 import { empresas, tenantSecrets } from '@/src/db/schema';
 import { invalidarCache, loadTenantConfigById } from '@/src/db/tenantConfig';
-import { garantirZernioInicializado, zernioDo } from '@/src/lib/clients';
+import { garantirZernioInicializado, zernioCompartilhado } from '@/src/lib/clients';
 import { comRetryDb } from '@/src/db/retry';
 import type { Rede } from '@/src/types';
 
@@ -50,10 +50,12 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
   try {
     await garantirZernioInicializado();
     const tenant = await loadTenantConfigById(empresaId);
+    // SEMPRE usa o cliente compartilhado da Swell — empresa-testador não tem
+    // apiKey própria e mesmo a Swell vai criar o Profile na própria conta dela.
+    const zernio = zernioCompartilhado();
 
     let profileId = tenant.zernioProfileId;
     if (!profileId) {
-      const zernio = zernioDo(tenant);
       const resp = await zernio.profiles.createProfile({ body: { name: tenant.nome } });
       const data = (resp as { data?: { profile?: { _id?: string } }; error?: { message?: string } });
       if (data.error) {
@@ -76,9 +78,6 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
       invalidarCache(tenant.slug);
     }
 
-    // Tenant atualizado com profileId (mesmo se acabou de criar).
-    const tenantAtualizado = await loadTenantConfigById(empresaId);
-    const zernio = zernioDo(tenantAtualizado);
     const redirectUrl = montarRedirect(empresaId);
 
     const links: Array<{ rede: Rede; authUrl: string; erro?: string }> = [];
@@ -132,7 +131,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       });
     }
 
-    const zernio = zernioDo(tenant);
+    // Cliente compartilhado da Swell (não da empresa-testador).
+    const zernio = zernioCompartilhado();
     const resp = await zernio.accounts.listAccounts({
       query: { profileId: tenant.zernioProfileId },
     });

@@ -83,6 +83,20 @@ export async function garantirZernioInicializado(): Promise<void> {
   inicializarZernioCompartilhado(swell);
 }
 
+/** Retorna direto o cliente Zernio compartilhado da Swell. Diferente de
+ * zernioDo(tenant): este NÃO depende do tenant ter apiKey ou profileId — útil
+ * pra OPERAÇÕES ADMINISTRATIVAS (criar Profile, gerar getConnectUrl) que
+ * acontecem ANTES da empresa ter Profile setado. Chame
+ * garantirZernioInicializado() antes. */
+export function zernioCompartilhado(): Zernio {
+  if (!zernioCompartilhadoCache) {
+    throw new Error(
+      'zernioCompartilhado não inicializado. Chame `await garantirZernioInicializado()` antes.',
+    );
+  }
+  return zernioCompartilhadoCache;
+}
+
 /** Retorna o tenantSlug efetivo que dona a apiKey Zernio que será usada pelo
  * cliente — útil pra construir URLs do dashboard / debug. */
 export function donoZernioApiKey(tenant: TenantConfig): string {
