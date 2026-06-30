@@ -45,6 +45,25 @@ const COLUNAS_SORT: Record<string, ColunaSort> = {
   atualizado: { campo: 'atualizado', label: 'Atualizado' },
 };
 
+/**
+ * Quando o usuário arrasta um post de um dia pra outro no calendário, queremos
+ * preservar a HORA original (ex: post agendado pras 18:30 continua às 18:30,
+ * só muda o dia). Se não tinha hora ou nem data, default 09:00 Brasília.
+ */
+function novaDataPreservandoHora(
+  dataOriginalIso: string | null | undefined,
+  novoDiaIso: string,
+): string {
+  const original = dataOriginalIso ?? '';
+  const m = original.match(/T(\d{2}:\d{2}:\d{2}(?:\.\d+)?)([+-]\d{2}:?\d{2}|Z)?/);
+  if (m) {
+    const hora = m[1];
+    const tz = m[2] ?? '-03:00';
+    return `${novoDiaIso}T${hora}${tz}`;
+  }
+  return `${novoDiaIso}T09:00:00-03:00`;
+}
+
 export function PostsTable({ posts: postsServer, clientes, filtros, ordem, geradoEm }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -355,6 +374,20 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           mes={mesAtivo}
           onMesChange={(novo) => setFiltro('mes', novo)}
           onSelecionar={(p) => setSelecionadoId(p.pageId)}
+          pendentes={pendentes}
+          onMoverPost={(pageId, novoDiaIso) => {
+            const post = posts.find((x) => x.pageId === pageId);
+            if (!post) return;
+            const nova = novaDataPreservandoHora(
+              post.dataPublicacao ?? post.publicadoEm,
+              novoDiaIso,
+            );
+            salvar(
+              pageId,
+              { dataPublicacao: nova },
+              { dataPublicacao: nova },
+            );
+          }}
         />
       )}
 

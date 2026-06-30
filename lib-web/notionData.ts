@@ -126,6 +126,13 @@ export interface FiltrosPosts {
   cliente?: string;
   /** Formato YYYY-MM. Filtra DataPublicacao dentro do mês. */
   mes?: string;
+  /**
+   * Range explícito (YYYY-MM-DD). Tem prioridade sobre `mes` quando definido.
+   * Usado pelo calendário pra pegar a grid inteira (semanas que invadem o mês
+   * anterior/próximo) num único request.
+   */
+  dataDe?: string;
+  dataAte?: string;
   tipo?: string;
   /** Lista de redes — post precisa ter QUALQUER UMA delas. */
   redes?: string[];
@@ -200,7 +207,22 @@ export async function listarPostsDoNotion(
     if (orRedes.length === 1) filtros.push(orRedes[0]);
     else filtros.push({ or: orRedes });
   }
-  if (opts.mes) {
+  // Range explícito vence o mês — usado pelo calendário pra pegar a grid
+  // toda (que estende ~6 dias antes/depois do mês corrente).
+  if (opts.dataDe || opts.dataAte) {
+    if (opts.dataDe) {
+      filtros.push({
+        property: 'DataPublicacao',
+        date: { on_or_after: opts.dataDe },
+      });
+    }
+    if (opts.dataAte) {
+      filtros.push({
+        property: 'DataPublicacao',
+        date: { on_or_before: opts.dataAte },
+      });
+    }
+  } else if (opts.mes) {
     const range = rangeDoMes(opts.mes);
     if (range) {
       filtros.push({

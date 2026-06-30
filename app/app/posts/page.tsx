@@ -24,7 +24,32 @@ interface Props {
     redes?: string;
     sort?: string;
     dir?: string;
+    view?: string;
   }>;
+}
+
+/**
+ * Quando o usuário está no calendário, a grid mostra ~6 semanas (geralmente
+ * começa no domingo da última semana do mês anterior e termina no sábado da
+ * primeira semana do mês seguinte). Esse helper devolve o range que cobre
+ * tudo que a grid vai renderizar — pra que posts de jun/jul apareçam nas
+ * células que mostram esses dias mesmo quando o usuário está vendo "junho".
+ */
+function rangeDaGridCalendario(mes: string): { de: string; ate: string } | null {
+  const m = mes.match(/^(\d{4})-(\d{2})$/);
+  if (!m) return null;
+  const ano = parseInt(m[1], 10);
+  const mesNum = parseInt(m[2], 10);
+  const primeiroDiaMes = new Date(ano, mesNum - 1, 1);
+  const ultimoDiaMes = new Date(ano, mesNum, 0);
+  const inicio = new Date(primeiroDiaMes);
+  inicio.setDate(inicio.getDate() - inicio.getDay()); // volta pro domingo
+  const fim = new Date(ultimoDiaMes);
+  const sobra = 6 - fim.getDay();
+  if (sobra > 0) fim.setDate(fim.getDate() + sobra); // avança até sábado
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return { de: fmt(inicio), ate: fmt(fim) };
 }
 
 const CAMPOS_SORT_VALIDOS: CampoSort[] = [
@@ -65,10 +90,19 @@ export default async function PostsPage({ searchParams }: Props) {
     ? sp.redes.split(',').map((r) => r.trim()).filter(Boolean)
     : undefined;
 
+  // No modo calendário, usamos `dataDe`/`dataAte` cobrindo a grid inteira
+  // (semanas adjacentes) em vez do filtro fechado de mês. Isso garante que
+  // posts de jun aparecem nas células que mostram dias finais de maio, e
+  // posts de jul nas células que mostram dias iniciais de jul.
+  const ehCalendario = sp.view === 'calendario';
+  const rangeCalendario =
+    ehCalendario && sp.mes ? rangeDaGridCalendario(sp.mes) : null;
   const filtros = {
     status: sp.status || undefined,
     cliente: sp.cliente || undefined,
-    mes: sp.mes || undefined,
+    mes: rangeCalendario ? undefined : sp.mes || undefined,
+    dataDe: rangeCalendario?.de,
+    dataAte: rangeCalendario?.ate,
     tipo: sp.tipo || undefined,
     redes,
   };
