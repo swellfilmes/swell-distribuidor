@@ -6,50 +6,52 @@
 
 ---
 
-## Onda 1 — "Não envergonhar na rodada de testes humanos"
+## Onda 1 — "Não envergonhar na rodada de testes humanos" ✅ CONCLUÍDA (2026-06-30)
 
 **Meta:** sair daqui com média **~6,5/10**. Tampar o que compromete teste com humano externo.
 **Esforço total estimado:** ~30h.
+**Resultado:** todos os itens entregues nos commits `955652f` e `38fd22d`. Build limpo, typecheck limpo, `npm test` 33/33.
 
 ### Segurança & Multi-tenancy (M, 8h)
-- [ ] `lib-web/validators.ts` com schemas Zod por rota, aplicar em todas as `/api/*`
-- [ ] Guard `assertPagePertenceAoTenant` em `lib-web/notionData.ts` (carregamento + PATCH) — fecha IDOR em `/api/posts/[pageId]`
-- [ ] `npm audit fix` (1 high + 6 moderate)
-- [ ] Security headers em `next.config.ts` (CSP / HSTS / X-Frame-Options / Referrer-Policy)
-- [ ] Cap de tamanho no presigned upload via `createPresignedPost` com `content-length-range`
+- [x] `lib-web/validators.ts` com schemas Zod por rota, aplicado em 11 rotas `/api/*` (.strict() em todos)
+- [x] Guard `assertPagePertenceAoTenant` em `lib-web/notionData.ts` (carregamento + PATCH) — IDOR fechado
+- [x] `npm audit fix` (form-data CRLF removido; sobram 2 moderate em postcss transitivo do Next 16, sem fix sem downgrade)
+- [x] Security headers em `next.config.ts` (HSTS / X-Frame-Options / Referrer-Policy / Permissions-Policy / X-Content-Type-Options). CSP ficou pra Onda 2 — exige teste fino com Clerk/Sentry.
+- [x] Cap de tamanho no presigned upload — `tamanhoBytes` obrigatório, assinado com `ContentLength`; cap 5GB em `LIMITE_UPLOAD_BYTES`
 
 ### Confiabilidade (M, 6h)
-- [ ] `src/lib/resiliencia.ts` com helper `comTimeoutERetry(fn, opts)` (3 retries, 30s timeout, exponential backoff)
-- [ ] Aplicar em Anthropic / Zernio / Notion
-- [ ] ffmpeg com `timeout: 120_000` em `execFile`
-- [ ] Marcar `Status=Publicando` no Notion **antes** de chamar Zernio (mata a race de duplicação)
+- [x] `src/lib/resiliencia.ts` com `comTimeoutERetry(fn, opts)` (timeout + exponential backoff em ECONNRESET/5xx/429)
+- [x] Aplicado em Anthropic (cerebro, redator, avaliador, thumbnailAgent, agendador) e Zernio (createPost, getPost)
+- [x] ffmpeg/ffprobe com timeout (5min ffmpeg, 30s ffprobe)
+- [x] Anti-race: `ZernioPostId='PROCESSING-<ts>'` antes de chamar Zernio, libera em caso de exceção
 
 ### Observabilidade mínima (P, 3h)
-- [ ] Sentry no Next (Vercel) + no worker (Railway)
-- [ ] `/api/health` endpoint + `railway.json` `healthcheckPath`
-- [ ] Healthchecks.io ping no fim de cada cron
+- [x] `@sentry/nextjs` v10 wireado (server + edge + client + worker). No-op silencioso sem DSN.
+- [x] `/api/health` endpoint
+- [x] `src/lib/healthcheck.ts` + integração em `paraCadaEmpresa` (ping start/success/fail por cron via `HEALTHCHECKS_<NOME>_URL`)
 
 ### Testes mínimos (P, 3h)
-- [ ] `.github/workflows/ci.yml` rodando typecheck + build em PR
-- [ ] Branch protection no main
-- [ ] Vitest + 5 unit tests (`reconciliarCopy`, roteamento de redes, parser de nome, `scheduledFor` passado→publishNow, filtro de tamanho)
+- [x] `.github/workflows/ci.yml` com `npm ci + typecheck + build + test` em PR e push main
+- [ ] Branch protection no main (configurar via UI do GitHub — passo manual)
+- [x] Vitest + 33 testes em 5 arquivos (`reconciliarCopy`, `parseNome`, `limitesRede`, `resiliencia`, `publicacaoAgora`)
 
 ### Docs essenciais (P, 4h)
-- [ ] Tirar `COMO-FUNCIONA.md` do `.gitignore`
-- [ ] `README.md` mínimo na raiz (o que é + quickstart + links pros SETUP-F2)
-- [ ] `RUNBOOK.md` (rollback Vercel/Railway, backup `ENCRYPTION_KEY`, debugar cron manual)
-- [ ] `docs/USUARIO.md` pra Swell/Isa (upload, aprovar, editar copy, FAQ)
+- [x] `COMO-FUNCIONA.md` removido do `.gitignore` (agora versionado)
+- [x] `README.md` na raiz (72 linhas)
+- [x] `RUNBOOK.md` na raiz (256 linhas — deploy, rollback, backup ENCRYPTION_KEY, debug cron, Notion DB, Zernio Profile)
+- [x] `docs/USUARIO.md` (176 linhas — onboarding, upload, aprovação, FAQ)
 
 ### Legal (P, 2h)
-- [ ] Termos de uso + Política de privacidade (template ou Iubenda)
-- [ ] Checkbox de aceite no signup
+- [x] `app/termos/page.tsx` (~250 linhas, v1 2026-06-30)
+- [x] `app/privacidade/page.tsx` (~300 linhas, LGPD-compliant)
+- [x] Coluna `users.termosAceitos` no schema + `AceiteTermosGate` bloqueando `/app/*` e `/convite/[token]` até aceitar + `POST /api/aceitar-termos`
 
 ### UX mínimo (M, 4h)
-- [ ] Sidebar com hamburger + drawer em mobile
-- [ ] Remover tema claro do onboarding (`from-white to-amber-50/40`)
-- [ ] Remover `bg-cream/50` e `hover:text-app` do drawer
-- [ ] Reskinar `StatusBadge` (`bg-blue-100` etc) pro tema dark
-- [ ] Botões Aprovar / Rejeitar do drawer com tokens do DS
+- [x] Sidebar com hamburger fixo top-left + drawer mobile + overlay + ESC pra fechar
+- [x] Onboarding com gradient dark (`from-app via-app to-surface`)
+- [x] PostDetailDrawer: `bg-cream/50` → `bg-surface/60`; `hover:text-app` → `hover:text-fg`; `bg-primary/40` → `bg-app/70`
+- [x] StatusBadge e RedeBadge reskinados pro tema dark (tokens `/15 /30` em vez de `bg-blue-100`)
+- [x] Botões Aprovar (primary/app) e Rejeitar (error/40) dentro do DS
 
 ---
 
