@@ -25,16 +25,16 @@ export function StepNotion({ empresaId, notionPronto, notionDbId, onAvancar }: P
       </div>
 
       {notionPronto ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-emerald-900">
+        <div className="rounded-xl border border-success/30 bg-success/10 p-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-success">
             <span className="text-base">✓</span> Notion conectado
           </div>
           {recemConectado && workspaceNome && (
-            <div className="mt-1 text-xs text-emerald-800/80">
+            <div className="mt-1 text-xs text-success/80">
               Workspace: <b>{workspaceNome}</b>
             </div>
           )}
-          <div className="mt-2 break-all font-mono text-[11px] text-emerald-800/65">
+          <div className="mt-2 break-all font-mono text-[11px] text-success/65">
             DB: {notionDbId}
           </div>
         </div>

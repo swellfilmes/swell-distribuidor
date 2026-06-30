@@ -120,11 +120,11 @@ export function ZernioEditor({
       )}
 
       {prontoEfetivo && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm">
-          <div className="flex items-center gap-2 font-medium text-emerald-900">
+        <div className="rounded-xl border border-success/30 bg-success/10 p-4 text-sm">
+          <div className="flex items-center gap-2 font-medium text-success">
             <span className="text-base">✓</span> Zernio já conectado
           </div>
-          <div className="mt-1 text-xs text-emerald-800/80">
+          <div className="mt-1 text-xs text-success/80">
             Pra trocar a API Key, cola a nova abaixo. Pra manter, deixa em branco e
             só atualiza os account IDs que mudou.
           </div>
@@ -152,10 +152,10 @@ export function ZernioEditor({
       </div>
 
       {erro && (
-        <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-900">{erro}</div>
+        <div className="rounded-md bg-error/10 px-3 py-2 text-xs text-error">{erro}</div>
       )}
       {ok && (
-        <div className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+        <div className="rounded-md bg-success/10 px-3 py-2 text-xs text-success">
           ✅ Zernio salvo.
         </div>
       )}
@@ -190,7 +190,7 @@ function Campo({
     <div className="space-y-1">
       <label className="text-xs font-medium">
         {label}
-        {obrigatorio && <span className="ml-1 text-red-600">*</span>}
+        {obrigatorio && <span className="ml-1 text-error">*</span>}
       </label>
       <input
         type="text"

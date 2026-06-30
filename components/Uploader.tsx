@@ -530,9 +530,9 @@ function ItemCard({
   const sucesso = etapa.tipo === 'concluido';
   const erro = etapa.tipo === 'erro';
   const borda = sucesso
-    ? 'border-emerald-200 bg-emerald-50'
+    ? 'border-success/30 bg-success/10'
     : erro
-    ? 'border-rose-200 bg-rose-50'
+    ? 'border-error/30 bg-error/10'
     : 'border-bd/15 bg-surface';
 
   const podeRemover =
@@ -614,14 +614,14 @@ function ItemCard({
               href={etapa.resultado.notionUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block text-xs font-medium text-emerald-800 underline hover:text-emerald-950"
+              className="inline-block text-xs font-medium text-success underline hover:text-emerald-950"
             >
               Abrir no Notion ↗
             </a>
           </div>
         )}
         {etapa.tipo === 'erro' && (
-          <p className="text-xs text-rose-800">❌ {etapa.erro}</p>
+          <p className="text-xs text-error">❌ {etapa.erro}</p>
         )}
       </div>
     </div>
@@ -641,7 +641,7 @@ function Barra({ pct }: { pct: number }) {
 
 function AvisoWorker() {
   return (
-    <p className="mt-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+    <p className="mt-4 rounded border border-primary/30 bg-primary/8 px-3 py-2 text-xs text-fg">
       💡 O worker do Railway pega os jobs em paralelo. Se algum ficar parado em
       &ldquo;enfileirado&rdquo; por mais de 1min, dá uma olhada no painel do
       Railway.

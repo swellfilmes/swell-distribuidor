@@ -236,11 +236,11 @@ export function EmpresaForm({ modo, inicial, empresaId }: Props) {
             <p>
               <strong>Notion:</strong>{' '}
               {test.notion.ok ? (
-                <span className="text-emerald-700">
+                <span className="text-success">
                   ✓ conectado. DB: {test.notion.nomeDb}
                 </span>
               ) : (
-                <span className="text-rose-700">✗ {test.notion.erro}</span>
+                <span className="text-error">✗ {test.notion.erro}</span>
               )}
             </p>
           )}
@@ -249,7 +249,7 @@ export function EmpresaForm({ modo, inicial, empresaId }: Props) {
               <strong>Zernio:</strong>{' '}
               {test.zernio.ok ? (
                 <>
-                  <span className="text-emerald-700">
+                  <span className="text-success">
                     ✓ conectado ({test.zernio.contas.length} contas)
                   </span>
                   {test.zernio.contas.length > 0 && (
@@ -263,7 +263,7 @@ export function EmpresaForm({ modo, inicial, empresaId }: Props) {
                   )}
                 </>
               ) : (
-                <span className="text-rose-700">✗ {test.zernio.erro}</span>
+                <span className="text-error">✗ {test.zernio.erro}</span>
               )}
             </p>
           )}
@@ -271,7 +271,7 @@ export function EmpresaForm({ modo, inicial, empresaId }: Props) {
       )}
 
       {erro && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-900">
+        <div className="rounded-md border border-error/30 bg-error/10 px-4 py-2 text-sm text-error">
           {erro}
         </div>
       )}

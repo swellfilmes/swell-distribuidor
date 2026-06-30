@@ -341,8 +341,8 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           className={
             'mb-3 rounded-md px-3 py-2 text-sm ' +
             (resultadoSync.ok
-              ? 'border border-emerald-200 bg-emerald-50 text-emerald-900'
-              : 'border border-rose-200 bg-rose-50 text-rose-900')
+              ? 'border border-success/30 bg-success/10 text-success'
+              : 'border border-error/30 bg-error/10 text-error')
           }
         >
           {resultadoSync.msg}
@@ -433,7 +433,7 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
                     />
                     {erro && (
                       <div
-                        className="mt-1 text-[10px] text-rose-700"
+                        className="mt-1 text-[10px] text-error"
                         title={erro}
                       >
                         ⚠ erro salvando

@@ -115,7 +115,7 @@ export function MembrosManager({ empresaId, membros, convites }: Props) {
         {msg && (
           <p
             className={
-              'mt-2 text-xs ' + (msg.ok ? 'text-emerald-700' : 'text-rose-700')
+              'mt-2 text-xs ' + (msg.ok ? 'text-success' : 'text-error')
             }
           >
             {msg.texto}
@@ -141,7 +141,7 @@ export function MembrosManager({ empresaId, membros, convites }: Props) {
                 </div>
                 <button
                   onClick={() => remover(m.userId)}
-                  className="text-xs text-rose-700 hover:underline"
+                  className="text-xs text-error hover:underline"
                 >
                   remover
                 </button>

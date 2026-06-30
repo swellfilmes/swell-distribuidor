@@ -59,7 +59,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
               {post.cliente} · {post.tipo} · {post.orientacao}
             </p>
             {erro && (
-              <p className="mt-1 text-xs text-rose-700">⚠ {erro}</p>
+              <p className="mt-1 text-xs text-error">⚠ {erro}</p>
             )}
           </div>
           <button

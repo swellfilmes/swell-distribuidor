@@ -53,7 +53,7 @@ export default async function PostsPage({ searchParams }: Props) {
   const empresa = await getEmpresaAtiva();
   if (!empresa) {
     return (
-      <div className="mx-auto max-w-2xl rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+      <div className="mx-auto max-w-2xl rounded-lg border border-primary/30 bg-primary/8 p-6 text-sm text-fg">
         Você ainda não tem nenhuma empresa vinculada. Peça pro admin te
         adicionar.
       </div>
@@ -82,15 +82,15 @@ export default async function PostsPage({ searchParams }: Props) {
   // Empresa em onboarding (sem Notion) — não tenta query Notion, mostra CTA.
   if (!temNotionConectado(tenant)) {
     return (
-      <div className="mx-auto max-w-2xl rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
-        <div className="mb-2 font-medium">Notion ainda não conectado</div>
-        <p className="mb-4">
-          A empresa <b>{empresa.nome}</b> ainda não tem a database do Notion
+      <div className="mx-auto max-w-xl rounded-2xl border border-primary/30 bg-primary/8 p-6">
+        <div className="mb-2 text-sm font-medium text-fg">Notion ainda não conectado</div>
+        <p className="mb-4 text-sm text-fg-muted">
+          A empresa <b className="text-fg">{empresa.nome}</b> ainda não tem a database do Notion
           conectada. Termine o onboarding antes de ver os posts.
         </p>
         <a
           href="/app/onboarding"
-          className="inline-block rounded-md bg-primary px-3 py-2 text-xs font-medium text-app hover:opacity-90"
+          className="inline-block rounded-lg bg-primary px-3 py-2 text-xs font-medium text-app hover:opacity-90"
         >
           Ir pro wizard de onboarding →
         </a>
@@ -123,16 +123,16 @@ export default async function PostsPage({ searchParams }: Props) {
     <div className="mx-auto max-w-7xl">
       <header className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Tabela de posts</h1>
-          <p className="text-sm text-fg-muted/60">
-            Empresa: <strong>{empresa.nome}</strong> · {posts.length} post(s)
+          <h1 className="font-serif text-3xl text-fg">Posts</h1>
+          <p className="mt-1 text-sm text-fg-muted">
+            <span className="text-fg">{empresa.nome}</span> · {posts.length} post(s)
             mostrado(s)
           </p>
         </div>
       </header>
 
       {erro && (
-        <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-900">
+        <div className="mb-4 rounded-md border border-error/30 bg-error/10 px-4 py-2 text-sm text-error">
           Erro lendo do Notion: {erro}
         </div>
       )}

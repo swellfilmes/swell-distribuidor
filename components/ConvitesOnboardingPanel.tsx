@@ -102,50 +102,50 @@ export function ConvitesOnboardingPanel({ inicial }: Props) {
   const usados = convites.filter((c) => c.consumidoEm);
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-lg border border-bd/10 bg-surface p-4">
-        <div className="mb-3 text-sm font-medium">Gerar novo convite</div>
-        <div className="grid gap-3 sm:grid-cols-2">
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-bd/40 bg-surface/40 p-5">
+        <div className="mb-3 text-[13px] font-medium text-fg">Gerar novo convite</div>
+        <div className="grid gap-2 sm:grid-cols-2">
           <input
             type="email"
             value={emailSugerido}
             onChange={(e) => setEmailSugerido(e.target.value)}
             placeholder="Email sugerido (opcional)"
-            className="rounded-md border border-bd/15 bg-surface px-3 py-2 text-sm focus:border-bd focus:outline-none"
+            className="rounded-lg border border-bd/40 bg-surface-2/60 px-3 py-2 text-sm text-fg placeholder:text-fg-muted/50 focus:border-primary/60 focus:bg-surface-2 focus:outline-none"
           />
           <input
             type="text"
             value={nomeEmpresaSugerido}
             onChange={(e) => setNomeEmpresaSugerido(e.target.value)}
             placeholder="Nome de empresa sugerido (opcional)"
-            className="rounded-md border border-bd/15 bg-surface px-3 py-2 text-sm focus:border-bd focus:outline-none"
+            className="rounded-lg border border-bd/40 bg-surface-2/60 px-3 py-2 text-sm text-fg placeholder:text-fg-muted/50 focus:border-primary/60 focus:bg-surface-2 focus:outline-none"
           />
         </div>
-        <div className="mt-3 flex items-center justify-between">
-          <p className="text-xs text-fg-muted/55">
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-[11px] text-fg-muted">
             Campos opcionais — só dicas pré-preenchidas pro convidado.
           </p>
           <button
             onClick={criar}
             disabled={criando}
-            className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-app hover:opacity-90 disabled:opacity-40"
+            className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-app transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {criando ? 'Gerando...' : 'Gerar link'}
           </button>
         </div>
         {erro && (
-          <div className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-900">
+          <div className="mt-3 rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-xs text-error">
             {erro}
           </div>
         )}
       </div>
 
       <div>
-        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted/55">
+        <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.15em] text-fg-muted">
           Pendentes ({pendentes.length})
         </div>
         {pendentes.length === 0 ? (
-          <div className="rounded-md border border-dashed border-bd/15 p-4 text-center text-xs text-fg-muted/45">
+          <div className="rounded-xl border border-dashed border-bd/40 p-5 text-center text-xs text-fg-muted">
             Nenhum convite pendente.
           </div>
         ) : (
@@ -153,13 +153,13 @@ export function ConvitesOnboardingPanel({ inicial }: Props) {
             {pendentes.map((c) => (
               <div
                 key={c.id}
-                className="flex flex-col gap-2 rounded-md border border-bd/10 bg-surface p-3 sm:flex-row sm:items-center"
+                className="flex flex-col gap-3 rounded-xl border border-bd/40 bg-surface/40 p-3 sm:flex-row sm:items-center"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="truncate font-mono text-xs text-fg-muted/70">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-mono text-xs text-fg">
                     {urlConvite(c.token)}
                   </div>
-                  <div className="mt-1 text-[11px] text-fg-muted/45">
+                  <div className="mt-1 text-[11px] text-fg-muted">
                     Criado {formatarData(c.criadoEm)}
                     {c.emailSugerido && ` · pra ${c.emailSugerido}`}
                     {c.nomeEmpresaSugerido && ` · empresa "${c.nomeEmpresaSugerido}"`}
@@ -168,13 +168,13 @@ export function ConvitesOnboardingPanel({ inicial }: Props) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => copiar(c)}
-                    className="rounded-md border border-bd/15 px-3 py-1.5 text-xs hover:bg-primary/5"
+                    className="rounded-lg border border-bd/40 px-3 py-1.5 text-xs text-fg transition-colors hover:bg-surface-2/60"
                   >
                     {copiadoId === c.id ? 'Copiado!' : 'Copiar link'}
                   </button>
                   <button
                     onClick={() => cancelar(c.id)}
-                    className="rounded-md border border-red-200 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
+                    className="rounded-lg border border-error/30 px-3 py-1.5 text-xs text-error transition-colors hover:bg-error/10"
                   >
                     Cancelar
                   </button>
@@ -187,20 +187,20 @@ export function ConvitesOnboardingPanel({ inicial }: Props) {
 
       {usados.length > 0 && (
         <details>
-          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wide text-fg-muted/55">
+          <summary className="cursor-pointer text-[11px] font-medium uppercase tracking-[0.15em] text-fg-muted">
             Já consumidos ({usados.length})
           </summary>
-          <div className="mt-2 space-y-2">
+          <div className="mt-3 space-y-2">
             {usados.map((c) => (
               <div
                 key={c.id}
-                className="rounded-md border border-bd/10 bg-primary/[0.02] p-3 text-xs"
+                className="rounded-xl border border-bd/40 bg-surface/30 p-3 text-xs"
               >
-                <div className="text-fg-muted/70">
+                <div className="text-fg">
                   Virou empresa{' '}
-                  <b>{c.empresaCriadaNome ?? `#${c.empresaCriadaId}`}</b>
+                  <b className="text-primary">{c.empresaCriadaNome ?? `#${c.empresaCriadaId}`}</b>
                 </div>
-                <div className="mt-0.5 text-[11px] text-fg-muted/45">
+                <div className="mt-0.5 text-[11px] text-fg-muted">
                   Consumido em {c.consumidoEm ? formatarData(c.consumidoEm) : '?'}
                 </div>
               </div>

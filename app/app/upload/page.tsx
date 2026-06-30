@@ -12,7 +12,7 @@ export default async function UploadPage() {
   const empresa = await getEmpresaAtiva();
   if (!empresa) {
     return (
-      <div className="mx-auto max-w-2xl rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+      <div className="mx-auto max-w-2xl rounded-lg border border-primary/30 bg-primary/8 p-6 text-sm text-fg">
         Você ainda não tem nenhuma empresa vinculada. Peça pro admin te
         adicionar.
       </div>
@@ -20,13 +20,13 @@ export default async function UploadPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold">Subir mídia</h1>
-        <p className="text-sm text-fg-muted/60">
-          Aceita vídeo, foto ou carrossel (2+ fotos juntas). O cérebro analisa o
+    <div className="mx-auto max-w-3xl">
+      <header className="mb-8">
+        <h1 className="font-serif text-3xl text-fg">Subir mídia</h1>
+        <p className="mt-1 text-sm text-fg-muted">
+          Aceita vídeo, foto ou carrossel (2+ fotos juntas). A IA analisa o
           conteúdo, gera legenda por rede e cria a linha aguardando aprovação no
-          Notion da <strong>{empresa.nome}</strong>.
+          Notion da <strong className="text-fg">{empresa.nome}</strong>.
         </p>
       </header>
       <Uploader />

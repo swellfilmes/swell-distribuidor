@@ -9,49 +9,72 @@ interface Props {
 
 export function StepPronto({ empresaNome, empresaSlug }: Props) {
   return (
-    <div className="space-y-6 text-center">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">
-        🎉
+    <div className="space-y-7 text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-success/15 text-success">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-7 w-7"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
       </div>
       <div>
-        <h2 className="text-2xl font-semibold leading-tight">
+        <h2 className="font-serif text-3xl leading-tight text-fg">
           {empresaNome} pronta pra publicar
         </h2>
-        <p className="mt-2 text-sm text-fg-muted/70">
-          Notion e Zernio conectados. Agora você pode subir vídeos, fotos ou
-          carrosséis, ver a IA gerar as legendas, aprovar no Notion e publicar.
+        <p className="mt-2 text-sm text-fg-muted">
+          Notion e redes conectados. Agora você pode subir mídia, ver a IA gerar
+          as legendas, aprovar no Notion e publicar nas redes.
         </p>
       </div>
 
       <div className="space-y-2 text-left">
-        <Link
+        <CartaoAcao
           href={`/app/upload?empresa=${empresaSlug}`}
-          className="block rounded-lg border border-bd/10 bg-surface p-4 hover:bg-primary/[0.02]"
-        >
-          <div className="font-medium">📤 Subir primeira mídia</div>
-          <div className="mt-1 text-xs text-fg-muted/55">
-            Arrasta um .mp4, .jpg ou .png — a IA classifica e gera as legendas em ~30s.
-          </div>
-        </Link>
-        <Link
+          titulo="Subir primeira mídia"
+          desc="Arrasta um vídeo, foto ou carrossel. A IA classifica e gera as legendas em ~30s."
+        />
+        <CartaoAcao
           href={`/app/posts?empresa=${empresaSlug}`}
-          className="block rounded-lg border border-bd/10 bg-surface p-4 hover:bg-primary/[0.02]"
-        >
-          <div className="font-medium">📋 Ver posts agendados</div>
-          <div className="mt-1 text-xs text-fg-muted/55">
-            Calendário das publicações futuras e histórico.
-          </div>
-        </Link>
-        <Link
+          titulo="Ver posts agendados"
+          desc="Calendário das publicações futuras e histórico do que já saiu."
+        />
+        <CartaoAcao
           href={`/app/configuracoes?empresa=${empresaSlug}`}
-          className="block rounded-lg border border-bd/10 bg-surface p-4 hover:bg-primary/[0.02]"
-        >
-          <div className="font-medium">⚙️ Configurações da empresa</div>
-          <div className="mt-1 text-xs text-fg-muted/55">
-            Editar nome, atualizar integrações, gerenciar membros.
-          </div>
-        </Link>
+          titulo="Configurações"
+          desc="Adicionar mais redes sociais, editar integrações, ver perfil."
+        />
       </div>
     </div>
+  );
+}
+
+function CartaoAcao({
+  href,
+  titulo,
+  desc,
+}: {
+  href: string;
+  titulo: string;
+  desc: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-start gap-3 rounded-xl border border-bd/40 bg-surface/40 p-4 transition-colors hover:border-bd/70 hover:bg-surface-2/60"
+    >
+      <div className="flex-1">
+        <div className="text-[14px] font-medium text-fg">{titulo}</div>
+        <div className="mt-0.5 text-xs text-fg-muted">{desc}</div>
+      </div>
+      <span className="self-center text-fg-muted transition-transform group-hover:translate-x-0.5 group-hover:text-primary">
+        →
+      </span>
+    </Link>
   );
 }

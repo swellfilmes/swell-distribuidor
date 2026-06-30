@@ -39,8 +39,8 @@ export function ToggleAtivo({ empresaId, ativo }: Props) {
       className={
         'rounded-md px-3 py-1.5 text-xs font-medium ring-1 ring-inset transition disabled:opacity-50 ' +
         (ativo
-          ? 'bg-emerald-50 text-emerald-800 ring-emerald-200 hover:bg-emerald-100'
-          : 'bg-rose-50 text-rose-800 ring-rose-200 hover:bg-rose-100')
+          ? 'bg-success/10 text-success ring-emerald-200 hover:bg-success/15'
+          : 'bg-error/10 text-error ring-rose-200 hover:bg-error/15')
       }
     >
       {pending ? '…' : ativo ? 'Ativa ✓ · clique p/ desativar' : 'Desativada · clique p/ reativar'}
