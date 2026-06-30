@@ -14,7 +14,7 @@ export function InlineStatusEdit({ valor, pendente, onChange }: Props) {
     <div className="relative inline-block">
       <StatusBadge status={valor} className={pendente ? 'opacity-60' : ''} />
       {pendente && (
-        <span className="ml-1 inline-block animate-pulse text-[10px] text-ink/40">
+        <span className="ml-1 inline-block animate-pulse text-[10px] text-fg-muted/40">
           …
         </span>
       )}

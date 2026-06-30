@@ -85,11 +85,11 @@ export function ZernioEditor({
   return (
     <div className="space-y-4">
       {mostrarInstrucoes && (
-        <details className="rounded-xl border border-ink/10 bg-white p-4 text-sm" open>
+        <details className="rounded-xl border border-bd/10 bg-surface p-4 text-sm" open>
           <summary className="cursor-pointer font-medium">
             📋 Como obter as chaves do Zernio (~10 min)
           </summary>
-          <ol className="mt-3 space-y-2 text-xs text-ink/70">
+          <ol className="mt-3 space-y-2 text-xs text-fg-muted/70">
             <li>
               <b>1. Cria conta:</b> vai em{' '}
               <a
@@ -131,7 +131,7 @@ export function ZernioEditor({
         </div>
       )}
 
-      <div className="space-y-4 rounded-xl border border-ink/10 bg-white p-5">
+      <div className="space-y-4 rounded-xl border border-bd/10 bg-surface p-5">
         <Campo
           label="API Key do Zernio"
           value={apiKey}
@@ -146,7 +146,7 @@ export function ZernioEditor({
           <Campo label="TikTok account ID" value={tt} onChange={setTt} placeholder="(opcional)" mono />
           <Campo label="LinkedIn account ID" value={li} onChange={setLi} placeholder="(opcional)" mono />
         </div>
-        <p className="text-[11px] text-ink/45">
+        <p className="text-[11px] text-fg-muted/45">
           Account IDs vazios = rede não vai ser publicada.
         </p>
       </div>
@@ -163,7 +163,7 @@ export function ZernioEditor({
       <button
         onClick={salvar}
         disabled={salvando}
-        className="rounded-md bg-ink px-4 py-2.5 text-sm font-medium text-cream hover:opacity-90 disabled:opacity-40"
+        className="rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-app hover:opacity-90 disabled:opacity-40"
       >
         {salvando ? 'Salvando...' : 'Salvar Zernio'}
       </button>
@@ -198,7 +198,7 @@ function Campo({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={[
-          'w-full rounded-md border border-ink/15 bg-white px-3 py-2 text-sm focus:border-ink focus:outline-none',
+          'w-full rounded-md border border-bd/15 bg-surface px-3 py-2 text-sm focus:border-bd focus:outline-none',
           mono ? 'font-mono text-xs' : '',
         ].join(' ')}
       />

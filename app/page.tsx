@@ -12,13 +12,13 @@ export default async function Home() {
         <h1 className="text-4xl font-semibold tracking-tight">
           Swell Distribuidor
         </h1>
-        <p className="text-base text-ink/70">
+        <p className="text-base text-fg-muted/70">
           Distribuição social automatizada para clientes da Swell Filmes.
         </p>
         <div className="flex justify-center gap-3 pt-2">
           <Link
             href="/sign-in"
-            className="rounded-md bg-ink px-5 py-2.5 text-sm font-medium text-cream hover:opacity-90"
+            className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-app hover:opacity-90"
           >
             Entrar
           </Link>

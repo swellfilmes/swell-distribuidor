@@ -103,7 +103,7 @@ export function ConvitesOnboardingPanel({ inicial }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-ink/10 bg-white p-4">
+      <div className="rounded-lg border border-bd/10 bg-surface p-4">
         <div className="mb-3 text-sm font-medium">Gerar novo convite</div>
         <div className="grid gap-3 sm:grid-cols-2">
           <input
@@ -111,24 +111,24 @@ export function ConvitesOnboardingPanel({ inicial }: Props) {
             value={emailSugerido}
             onChange={(e) => setEmailSugerido(e.target.value)}
             placeholder="Email sugerido (opcional)"
-            className="rounded-md border border-ink/15 bg-white px-3 py-2 text-sm focus:border-ink focus:outline-none"
+            className="rounded-md border border-bd/15 bg-surface px-3 py-2 text-sm focus:border-bd focus:outline-none"
           />
           <input
             type="text"
             value={nomeEmpresaSugerido}
             onChange={(e) => setNomeEmpresaSugerido(e.target.value)}
             placeholder="Nome de empresa sugerido (opcional)"
-            className="rounded-md border border-ink/15 bg-white px-3 py-2 text-sm focus:border-ink focus:outline-none"
+            className="rounded-md border border-bd/15 bg-surface px-3 py-2 text-sm focus:border-bd focus:outline-none"
           />
         </div>
         <div className="mt-3 flex items-center justify-between">
-          <p className="text-xs text-ink/55">
+          <p className="text-xs text-fg-muted/55">
             Campos opcionais — só dicas pré-preenchidas pro convidado.
           </p>
           <button
             onClick={criar}
             disabled={criando}
-            className="rounded-md bg-ink px-3 py-2 text-xs font-medium text-cream hover:opacity-90 disabled:opacity-40"
+            className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-app hover:opacity-90 disabled:opacity-40"
           >
             {criando ? 'Gerando...' : 'Gerar link'}
           </button>
@@ -141,11 +141,11 @@ export function ConvitesOnboardingPanel({ inicial }: Props) {
       </div>
 
       <div>
-        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-ink/55">
+        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted/55">
           Pendentes ({pendentes.length})
         </div>
         {pendentes.length === 0 ? (
-          <div className="rounded-md border border-dashed border-ink/15 p-4 text-center text-xs text-ink/45">
+          <div className="rounded-md border border-dashed border-bd/15 p-4 text-center text-xs text-fg-muted/45">
             Nenhum convite pendente.
           </div>
         ) : (
@@ -153,13 +153,13 @@ export function ConvitesOnboardingPanel({ inicial }: Props) {
             {pendentes.map((c) => (
               <div
                 key={c.id}
-                className="flex flex-col gap-2 rounded-md border border-ink/10 bg-white p-3 sm:flex-row sm:items-center"
+                className="flex flex-col gap-2 rounded-md border border-bd/10 bg-surface p-3 sm:flex-row sm:items-center"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="truncate font-mono text-xs text-ink/70">
+                  <div className="truncate font-mono text-xs text-fg-muted/70">
                     {urlConvite(c.token)}
                   </div>
-                  <div className="mt-1 text-[11px] text-ink/45">
+                  <div className="mt-1 text-[11px] text-fg-muted/45">
                     Criado {formatarData(c.criadoEm)}
                     {c.emailSugerido && ` · pra ${c.emailSugerido}`}
                     {c.nomeEmpresaSugerido && ` · empresa "${c.nomeEmpresaSugerido}"`}
@@ -168,7 +168,7 @@ export function ConvitesOnboardingPanel({ inicial }: Props) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => copiar(c)}
-                    className="rounded-md border border-ink/15 px-3 py-1.5 text-xs hover:bg-ink/5"
+                    className="rounded-md border border-bd/15 px-3 py-1.5 text-xs hover:bg-primary/5"
                   >
                     {copiadoId === c.id ? 'Copiado!' : 'Copiar link'}
                   </button>
@@ -187,20 +187,20 @@ export function ConvitesOnboardingPanel({ inicial }: Props) {
 
       {usados.length > 0 && (
         <details>
-          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wide text-ink/55">
+          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wide text-fg-muted/55">
             Já consumidos ({usados.length})
           </summary>
           <div className="mt-2 space-y-2">
             {usados.map((c) => (
               <div
                 key={c.id}
-                className="rounded-md border border-ink/10 bg-ink/[0.02] p-3 text-xs"
+                className="rounded-md border border-bd/10 bg-primary/[0.02] p-3 text-xs"
               >
-                <div className="text-ink/70">
+                <div className="text-fg-muted/70">
                   Virou empresa{' '}
                   <b>{c.empresaCriadaNome ?? `#${c.empresaCriadaId}`}</b>
                 </div>
-                <div className="mt-0.5 text-[11px] text-ink/45">
+                <div className="mt-0.5 text-[11px] text-fg-muted/45">
                   Consumido em {c.consumidoEm ? formatarData(c.consumidoEm) : '?'}
                 </div>
               </div>

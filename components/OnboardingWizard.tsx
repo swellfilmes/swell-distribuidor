@@ -44,11 +44,11 @@ export function OnboardingWizard(props: Props) {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-xl bg-white/60 p-4 backdrop-blur sm:p-5">
+      <div className="rounded-xl bg-surface/60 p-4 backdrop-blur sm:p-5">
         <OnboardingProgress passos={passos} />
       </div>
 
-      <div className="rounded-2xl border border-ink/10 bg-white/85 p-5 shadow-sm backdrop-blur sm:p-8">
+      <div className="rounded-2xl border border-bd/10 bg-surface/85 p-5 shadow-sm backdrop-blur sm:p-8">
         {step === 'boas-vindas' && (
           <StepBoasVindas
             empresaNome={props.empresaNome}
@@ -92,7 +92,7 @@ export function OnboardingWizard(props: Props) {
               if (step === 'notion') setStep('boas-vindas');
               else if (step === 'zernio') setStep('notion');
             }}
-            className="text-xs text-ink/55 hover:underline"
+            className="text-xs text-fg-muted/55 hover:underline"
           >
             ← voltar
           </button>

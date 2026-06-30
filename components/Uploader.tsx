@@ -454,11 +454,11 @@ export function Uploader() {
         className={
           'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors ' +
           (drag
-            ? 'border-ink bg-ink/5'
-            : 'border-ink/20 bg-white hover:border-ink/40')
+            ? 'border-bd bg-primary/5'
+            : 'border-bd/20 bg-surface hover:border-bd/40')
         }
       >
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="mb-3 text-ink/40">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="mb-3 text-fg-muted/40">
           <path
             d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"
             stroke="currentColor"
@@ -466,10 +466,10 @@ export function Uploader() {
             strokeLinecap="round"
           />
         </svg>
-        <p className="text-base font-medium text-ink/85">
+        <p className="text-base font-medium text-fg-muted/85">
           Arrasta vídeos ou fotos aqui ou clica pra escolher
         </p>
-        <p className="mt-1 text-xs text-ink/55">
+        <p className="mt-1 text-xs text-fg-muted/55">
           MP4 / MOV / WEBM / JPG / PNG / WEBP — máx. {MAX_CONCORRENTES} subindo ao mesmo tempo
         </p>
         <input
@@ -488,14 +488,14 @@ export function Uploader() {
       {itens.length > 0 && (
         <div className="mt-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-ink/70">
+            <h2 className="text-sm font-medium text-fg-muted/70">
               {itens.length} arquivo{itens.length === 1 ? '' : 's'}
               {temAtividade ? ' — processando…' : ''}
             </h2>
             {temFinalizado && (
               <button
                 onClick={limparConcluidos}
-                className="text-xs font-medium text-ink/60 hover:text-ink/90"
+                className="text-xs font-medium text-fg-muted/60 hover:text-fg-muted/90"
               >
                 Limpar concluídos
               </button>
@@ -533,7 +533,7 @@ function ItemCard({
     ? 'border-emerald-200 bg-emerald-50'
     : erro
     ? 'border-rose-200 bg-rose-50'
-    : 'border-ink/15 bg-white';
+    : 'border-bd/15 bg-surface';
 
   const podeRemover =
     etapa.tipo === 'fila' || etapa.tipo === 'concluido' || etapa.tipo === 'erro';
@@ -544,23 +544,23 @@ function ItemCard({
         <div className="min-w-0 flex-1">
           {ehCarrossel ? (
             <>
-              <p className="flex items-center gap-1.5 text-sm font-medium text-ink/85">
+              <p className="flex items-center gap-1.5 text-sm font-medium text-fg-muted/85">
                 <span>🎠 Carrossel</span>
-                <span className="rounded-full bg-ink/10 px-1.5 py-0.5 text-[10px] font-medium text-ink/70">
+                <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-fg-muted/70">
                   {todosOsArquivos.length} imagens
                 </span>
               </p>
-              <p className="mt-0.5 truncate text-xs text-ink/55">
+              <p className="mt-0.5 truncate text-xs text-fg-muted/55">
                 {todosOsArquivos.map((a) => a.name).join(', ')}
               </p>
-              <p className="mt-0.5 text-xs text-ink/55">
+              <p className="mt-0.5 text-xs text-fg-muted/55">
                 {tamanhoTotalMB.toFixed(1)} MB total
               </p>
             </>
           ) : (
             <>
-              <p className="truncate text-sm font-medium text-ink/85">{arquivo.name}</p>
-              <p className="mt-0.5 text-xs text-ink/55">
+              <p className="truncate text-sm font-medium text-fg-muted/85">{arquivo.name}</p>
+              <p className="mt-0.5 text-xs text-fg-muted/55">
                 {tamanhoTotalMB.toFixed(1)} MB
               </p>
             </>
@@ -569,7 +569,7 @@ function ItemCard({
         {podeRemover && (
           <button
             onClick={onRemover}
-            className="text-xs text-ink/50 hover:text-ink/80"
+            className="text-xs text-fg-muted/50 hover:text-fg-muted/80"
             title="Remover"
           >
             ✕
@@ -579,25 +579,25 @@ function ItemCard({
 
       <div className="mt-2">
         {etapa.tipo === 'fila' && (
-          <p className="text-xs text-ink/60">Na fila…</p>
+          <p className="text-xs text-fg-muted/60">Na fila…</p>
         )}
         {etapa.tipo === 'subindo' && (
           <>
             <Barra pct={etapa.pct} />
-            <p className="mt-1 text-xs text-ink/60">Subindo no R2 — {etapa.pct}%</p>
+            <p className="mt-1 text-xs text-fg-muted/60">Subindo no R2 — {etapa.pct}%</p>
           </>
         )}
         {etapa.tipo === 'enfileirado' && (
-          <p className="text-xs text-ink/60">
+          <p className="text-xs text-fg-muted/60">
             Enfileirado (job #{etapa.jobId}) — aguardando worker…
           </p>
         )}
         {etapa.tipo === 'processando' && (
           <>
-            <div className="h-1 w-full overflow-hidden rounded bg-ink/10">
-              <div className="h-full w-1/3 animate-pulse bg-ink/60" />
+            <div className="h-1 w-full overflow-hidden rounded bg-primary/10">
+              <div className="h-full w-1/3 animate-pulse bg-primary/60" />
             </div>
-            <p className="mt-1 text-xs text-ink/60">
+            <p className="mt-1 text-xs text-fg-muted/60">
               Worker processando (job #{etapa.jobId})…
             </p>
           </>
@@ -605,9 +605,9 @@ function ItemCard({
         {etapa.tipo === 'concluido' && (
           <div className="space-y-2">
             <dl className="grid grid-cols-[80px_1fr] gap-y-0.5 text-xs">
-              <dt className="text-ink/55">Cliente</dt>
+              <dt className="text-fg-muted/55">Cliente</dt>
               <dd>{etapa.resultado.cliente}</dd>
-              <dt className="text-ink/55">Tipo</dt>
+              <dt className="text-fg-muted/55">Tipo</dt>
               <dd>{etapa.resultado.tipo}</dd>
             </dl>
             <a
@@ -630,9 +630,9 @@ function ItemCard({
 
 function Barra({ pct }: { pct: number }) {
   return (
-    <div className="h-2 w-full overflow-hidden rounded bg-ink/10">
+    <div className="h-2 w-full overflow-hidden rounded bg-primary/10">
       <div
-        className="h-full bg-ink transition-all"
+        className="h-full bg-primary transition-all"
         style={{ width: `${pct}%` }}
       />
     </div>

@@ -48,7 +48,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-app text-text-primary">
+    <div className="flex min-h-screen bg-app text-fg">
       <Sidebar isAdmin={user.role === 'admin'} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar

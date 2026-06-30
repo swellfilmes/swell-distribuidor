@@ -78,7 +78,7 @@ export function InlineDateEdit({ iso, pendente, onChange }: Props) {
               setValor(isoParaInputLocal(iso));
             }
           }}
-          className="rounded border border-ink/20 bg-white px-1 py-0.5 text-xs"
+          className="rounded border border-bd/20 bg-surface px-1 py-0.5 text-xs"
         />
       </div>
     );
@@ -97,21 +97,21 @@ export function InlineDateEdit({ iso, pendente, onChange }: Props) {
           'rounded px-1 text-xs ' +
           (pendente
             ? 'opacity-60'
-            : 'cursor-pointer hover:bg-ink/5 hover:underline')
+            : 'cursor-pointer hover:bg-primary/5 hover:underline')
         }
       >
-        {iso ? formatarDataHora(iso) : <span className="text-ink/40">— definir</span>}
+        {iso ? formatarDataHora(iso) : <span className="text-fg-muted/40">— definir</span>}
       </span>
       {iso && !pendente && (
         <button
           onClick={limpar}
-          className="hidden text-[10px] text-ink/40 hover:text-rose-600 group-hover:inline"
+          className="hidden text-[10px] text-fg-muted/40 hover:text-rose-600 group-hover:inline"
           title="Limpar"
         >
           ✕
         </button>
       )}
-      {pendente && <span className="animate-pulse text-[10px] text-ink/40">…</span>}
+      {pendente && <span className="animate-pulse text-[10px] text-fg-muted/40">…</span>}
     </div>
   );
 }

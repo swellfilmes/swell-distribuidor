@@ -90,7 +90,7 @@ export default async function PostsPage({ searchParams }: Props) {
         </p>
         <a
           href="/app/onboarding"
-          className="inline-block rounded-md bg-ink px-3 py-2 text-xs font-medium text-cream hover:opacity-90"
+          className="inline-block rounded-md bg-primary px-3 py-2 text-xs font-medium text-app hover:opacity-90"
         >
           Ir pro wizard de onboarding →
         </a>
@@ -124,7 +124,7 @@ export default async function PostsPage({ searchParams }: Props) {
       <header className="mb-6 flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Tabela de posts</h1>
-          <p className="text-sm text-ink/60">
+          <p className="text-sm text-fg-muted/60">
             Empresa: <strong>{empresa.nome}</strong> · {posts.length} post(s)
             mostrado(s)
           </p>
@@ -137,7 +137,7 @@ export default async function PostsPage({ searchParams }: Props) {
         </div>
       )}
 
-      <Suspense fallback={<div className="text-sm text-ink/50">Carregando tabela...</div>}>
+      <Suspense fallback={<div className="text-sm text-fg-muted/50">Carregando tabela...</div>}>
         <PostsTable
           posts={posts}
           clientes={listaClientes}

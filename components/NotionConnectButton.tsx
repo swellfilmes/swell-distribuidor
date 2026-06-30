@@ -17,24 +17,24 @@ export function NotionConnectButton({ empresaId, jaConectado, dbId }: Props) {
   const label = jaConectado ? 'Reconectar Notion (OAuth)' : 'Conectar Notion (OAuth)';
 
   return (
-    <div className="rounded-lg border border-ink/10 bg-white p-4">
+    <div className="rounded-lg border border-bd/10 bg-surface p-4">
       <div className="mb-2 flex items-center justify-between">
         <div>
           <div className="text-sm font-medium">Notion via OAuth</div>
-          <div className="text-xs text-ink/55">
+          <div className="text-xs text-fg-muted/55">
             Autoriza o app e cria a database de distribuição automaticamente na sua workspace.
           </div>
         </div>
         <a
           href={href}
-          className="rounded-md bg-ink px-3 py-2 text-xs font-medium text-white hover:bg-ink/85"
+          className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-app hover:bg-primary/85"
         >
           {label}
         </a>
       </div>
 
       {jaConectado && (
-        <div className="mt-2 text-xs text-ink/55">
+        <div className="mt-2 text-xs text-fg-muted/55">
           DB atual: <code className="break-all">{dbId}</code>
         </div>
       )}

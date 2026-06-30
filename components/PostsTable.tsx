@@ -218,14 +218,14 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
   return (
     <>
       {/* Toggle de view */}
-      <div className="mb-3 inline-flex overflow-hidden rounded-md border border-ink/15">
+      <div className="mb-3 inline-flex overflow-hidden rounded-md border border-bd/15">
         <button
           onClick={() => trocarView('tabela')}
           className={
             'px-3 py-1.5 text-sm ' +
             (viewMode === 'tabela'
-              ? 'bg-ink text-cream'
-              : 'bg-white text-ink/70 hover:bg-ink/5')
+              ? 'bg-primary text-app'
+              : 'bg-surface text-fg-muted/70 hover:bg-primary/5')
           }
         >
           Tabela
@@ -233,10 +233,10 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
         <button
           onClick={() => trocarView('calendario')}
           className={
-            'border-l border-ink/15 px-3 py-1.5 text-sm ' +
+            'border-l border-bd/15 px-3 py-1.5 text-sm ' +
             (viewMode === 'calendario'
-              ? 'bg-ink text-cream'
-              : 'bg-white text-ink/70 hover:bg-ink/5')
+              ? 'bg-primary text-app'
+              : 'bg-surface text-fg-muted/70 hover:bg-primary/5')
           }
         >
           Calendário
@@ -244,7 +244,7 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
       </div>
 
       {/* Filtros */}
-      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-ink/10 bg-white p-3">
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-bd/10 bg-surface p-3">
         <FiltroSelect
           label="Status"
           valor={filtros.status ?? ''}
@@ -267,7 +267,7 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           rotulos={{ '': 'Todos' }}
         />
         <div>
-          <label className="block text-xs uppercase tracking-wide text-ink/50">
+          <label className="block text-xs uppercase tracking-wide text-fg-muted/50">
             Redes
           </label>
           <div className="mt-1 flex gap-1">
@@ -287,8 +287,8 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
                   className={
                     'rounded px-2 py-1 text-[10px] font-semibold ring-1 ring-inset transition ' +
                     (ativa
-                      ? 'bg-ink text-cream ring-ink'
-                      : 'bg-white text-ink/60 ring-ink/15 hover:ring-ink/30')
+                      ? 'bg-primary text-app ring-primary'
+                      : 'bg-surface text-fg-muted/60 ring-primary/15 hover:ring-primary/30')
                   }
                 >
                   {r.slice(0, 2).toUpperCase()}
@@ -298,38 +298,38 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           </div>
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-wide text-ink/50">
+          <label className="block text-xs uppercase tracking-wide text-fg-muted/50">
             Mês
           </label>
           <input
             type="month"
             value={filtros.mes ?? ''}
             onChange={(e) => setFiltro('mes', e.target.value)}
-            className="mt-1 rounded-md border border-ink/15 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ink/20"
+            className="mt-1 rounded-md border border-bd/15 bg-surface px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
         {algumFiltro && (
           <button
             onClick={limparFiltros}
-            className="rounded-md px-2 py-1.5 text-xs text-ink/60 hover:bg-ink/5"
+            className="rounded-md px-2 py-1.5 text-xs text-fg-muted/60 hover:bg-primary/5"
           >
             Limpar filtros
           </button>
         )}
-        <div className="ml-auto flex items-center gap-3 text-xs text-ink/50">
+        <div className="ml-auto flex items-center gap-3 text-xs text-fg-muted/50">
           <span>Atualizado {tempoRelativo(geradoEm)} atrás</span>
           <button
             onClick={sincronizarZernio}
             disabled={sincronizando}
             title="Puxa o status de cada post do Zernio e atualiza no Notion (Agendado → Publicado etc.). Cron faz isso sozinho a cada 15min."
-            className="rounded-md border border-ink/15 px-2 py-1 text-ink/80 hover:bg-ink/5 disabled:opacity-60"
+            className="rounded-md border border-bd/15 px-2 py-1 text-fg-muted/80 hover:bg-primary/5 disabled:opacity-60"
           >
             {sincronizando ? 'Sincronizando…' : '↻ Sync Zernio'}
           </button>
           <button
             onClick={refrescar}
             disabled={pending}
-            className="rounded-md border border-ink/15 px-2 py-1 text-ink/80 hover:bg-ink/5 disabled:opacity-60"
+            className="rounded-md border border-bd/15 px-2 py-1 text-fg-muted/80 hover:bg-primary/5 disabled:opacity-60"
           >
             {pending ? '...' : 'Refresh'}
           </button>
@@ -360,9 +360,9 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
 
       {/* Tabela */}
       {viewMode === 'tabela' && (
-      <div className="overflow-hidden rounded-lg border border-ink/10 bg-white">
+      <div className="overflow-hidden rounded-lg border border-bd/10 bg-surface">
         <table className="w-full text-sm">
-          <thead className="border-b border-ink/10 bg-ink/[0.02] text-left text-xs uppercase tracking-wide text-ink/60">
+          <thead className="border-b border-bd/10 bg-primary/[0.02] text-left text-xs uppercase tracking-wide text-fg-muted/60">
             <tr>
               <th className="w-16 px-3 py-2"> </th>
               <ColunaHeader
@@ -397,7 +397,7 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           <tbody>
             {posts.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-10 text-center text-sm text-ink/50">
+                <td colSpan={8} className="px-3 py-10 text-center text-sm text-fg-muted/50">
                   Nenhum post encontrado com esses filtros.
                 </td>
               </tr>
@@ -409,7 +409,7 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
                 <tr
                   key={p.pageId}
                   onClick={() => setSelecionadoId(p.pageId)}
-                  className="cursor-pointer border-b border-ink/5 transition-colors last:border-0 hover:bg-ink/[0.03]"
+                  className="cursor-pointer border-b border-bd/5 transition-colors last:border-0 hover:bg-primary/[0.03]"
                 >
                   <td className="px-3 py-2">
                     {p.thumbnailUrl ? (
@@ -420,7 +420,7 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
                         className="h-10 w-12 rounded object-cover"
                       />
                     ) : (
-                      <div className="h-10 w-12 rounded bg-ink/5" />
+                      <div className="h-10 w-12 rounded bg-primary/5" />
                     )}
                   </td>
                   <td className="px-3 py-2">
@@ -440,8 +440,8 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-ink/80">{p.cliente || '—'}</td>
-                  <td className="px-3 py-2 text-ink/70">{p.tipo || '—'}</td>
+                  <td className="px-3 py-2 text-fg-muted/80">{p.cliente || '—'}</td>
+                  <td className="px-3 py-2 text-fg-muted/70">{p.tipo || '—'}</td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-1">
                       {p.redes.map((r) => (
@@ -449,10 +449,10 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
                       ))}
                     </div>
                   </td>
-                  <td className="max-w-[260px] truncate px-3 py-2 text-ink/85" title={p.nome}>
+                  <td className="max-w-[260px] truncate px-3 py-2 text-fg-muted/85" title={p.nome}>
                     {p.nome}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-xs text-ink/65">
+                  <td className="whitespace-nowrap px-3 py-2 text-xs text-fg-muted/65">
                     <InlineDateEdit
                       iso={p.dataPublicacao}
                       pendente={isPendente}
@@ -465,7 +465,7 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
                       }
                     />
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-xs text-ink/50">
+                  <td className="whitespace-nowrap px-3 py-2 text-xs text-fg-muted/50">
                     {tempoRelativo(p.atualizadoEm)}
                   </td>
                 </tr>
@@ -506,7 +506,7 @@ function ColunaHeader({
         onClick={onClick}
         className={
           'flex items-center gap-1 uppercase tracking-wide ' +
-          (ativo ? 'text-ink' : 'text-ink/60 hover:text-ink/80')
+          (ativo ? 'text-fg' : 'text-fg-muted/60 hover:text-fg-muted/80')
         }
       >
         {col.label}
@@ -533,13 +533,13 @@ function FiltroSelect({
 }) {
   return (
     <div>
-      <label className="block text-xs uppercase tracking-wide text-ink/50">
+      <label className="block text-xs uppercase tracking-wide text-fg-muted/50">
         {label}
       </label>
       <select
         value={valor}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 rounded-md border border-ink/15 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ink/20"
+        className="mt-1 rounded-md border border-bd/15 bg-surface px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
       >
         {opcoes.map((o) => (
           <option key={o} value={o}>

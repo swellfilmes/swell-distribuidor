@@ -115,7 +115,7 @@ export function CalendarView({ posts, mes, onMesChange, onSelecionar }: Props) {
         <div className="flex items-center gap-2">
           <button
             onClick={mesAnterior}
-            className="rounded-md border border-ink/15 px-2 py-1 text-sm text-ink/80 hover:bg-ink/5"
+            className="rounded-md border border-bd/15 px-2 py-1 text-sm text-fg-muted/80 hover:bg-primary/5"
             aria-label="Mês anterior"
           >
             ‹
@@ -125,25 +125,25 @@ export function CalendarView({ posts, mes, onMesChange, onSelecionar }: Props) {
           </h2>
           <button
             onClick={proxMes}
-            className="rounded-md border border-ink/15 px-2 py-1 text-sm text-ink/80 hover:bg-ink/5"
+            className="rounded-md border border-bd/15 px-2 py-1 text-sm text-fg-muted/80 hover:bg-primary/5"
             aria-label="Próximo mês"
           >
             ›
           </button>
           <button
             onClick={hojeMes}
-            className="ml-2 rounded-md border border-ink/15 px-2 py-1 text-xs text-ink/70 hover:bg-ink/5"
+            className="ml-2 rounded-md border border-bd/15 px-2 py-1 text-xs text-fg-muted/70 hover:bg-primary/5"
           >
             Hoje
           </button>
         </div>
-        <p className="text-xs text-ink/55">
+        <p className="text-xs text-fg-muted/55">
           {posts.length} post(s) no período visível
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-ink/10 bg-white">
-        <div className="grid grid-cols-7 border-b border-ink/10 bg-ink/[0.02] text-center text-xs uppercase tracking-wide text-ink/55">
+      <div className="overflow-hidden rounded-lg border border-bd/10 bg-surface">
+        <div className="grid grid-cols-7 border-b border-bd/10 bg-primary/[0.02] text-center text-xs uppercase tracking-wide text-fg-muted/55">
           {DIAS_SEMANA.map((d) => (
             <div key={d} className="py-2">
               {d}
@@ -162,21 +162,21 @@ export function CalendarView({ posts, mes, onMesChange, onSelecionar }: Props) {
               <div
                 key={iso}
                 className={
-                  'min-h-[110px] border-b border-r border-ink/5 p-1.5 ' +
-                  (noMes ? 'bg-white' : 'bg-ink/[0.015] text-ink/40')
+                  'min-h-[110px] border-b border-r border-bd/5 p-1.5 ' +
+                  (noMes ? 'bg-surface' : 'bg-primary/[0.015] text-fg-muted/40')
                 }
               >
                 <div className="mb-1 flex items-center justify-between">
                   <span
                     className={
                       'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs ' +
-                      (ehHoje ? 'bg-ink font-medium text-cream' : 'text-ink/60')
+                      (ehHoje ? 'bg-primary font-medium text-app' : 'text-fg-muted/60')
                     }
                   >
                     {d.getDate()}
                   </span>
                   {lista.length > 0 && noMes && (
-                    <span className="text-[10px] text-ink/40">
+                    <span className="text-[10px] text-fg-muted/40">
                       {lista.length}
                     </span>
                   )}
@@ -187,18 +187,18 @@ export function CalendarView({ posts, mes, onMesChange, onSelecionar }: Props) {
                       key={p.pageId}
                       onClick={() => onSelecionar(p)}
                       title={`${horaCurta(p.dataPublicacao ?? p.publicadoEm)} · ${p.nome}`}
-                      className="block w-full truncate rounded px-1.5 py-0.5 text-left text-[10px] leading-tight transition hover:bg-ink/5"
+                      className="block w-full truncate rounded px-1.5 py-0.5 text-left text-[10px] leading-tight transition hover:bg-primary/5"
                     >
-                      <span className="font-medium text-ink/70">
+                      <span className="font-medium text-fg-muted/70">
                         {horaCurta(p.dataPublicacao ?? p.publicadoEm)}
                       </span>{' '}
-                      <span className="text-ink/75">{p.cliente || p.tipo}</span>
+                      <span className="text-fg-muted/75">{p.cliente || p.tipo}</span>
                     </button>
                   ))}
                   {sobra > 0 && (
                     <button
                       onClick={() => setDiaAberto(iso)}
-                      className="block w-full rounded px-1.5 py-0.5 text-left text-[10px] text-ink/55 hover:bg-ink/5"
+                      className="block w-full rounded px-1.5 py-0.5 text-left text-[10px] text-fg-muted/55 hover:bg-primary/5"
                     >
                       +{sobra} mais
                     </button>
@@ -212,12 +212,12 @@ export function CalendarView({ posts, mes, onMesChange, onSelecionar }: Props) {
 
       {diaAberto && (
         <div className="fixed inset-0 z-30" onClick={() => setDiaAberto(null)}>
-          <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-primary/30 backdrop-blur-sm" />
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute left-1/2 top-1/2 max-h-[80vh] w-[min(560px,90vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-ink/10 bg-cream shadow-xl"
+            className="absolute left-1/2 top-1/2 max-h-[80vh] w-[min(560px,90vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-bd/10 bg-app shadow-xl"
           >
-            <header className="flex items-center justify-between border-b border-ink/10 px-4 py-3">
+            <header className="flex items-center justify-between border-b border-bd/10 px-4 py-3">
               <h3 className="font-medium">
                 {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' }).format(
                   new Date(`${diaAberto}T00:00:00`),
@@ -225,7 +225,7 @@ export function CalendarView({ posts, mes, onMesChange, onSelecionar }: Props) {
               </h3>
               <button
                 onClick={() => setDiaAberto(null)}
-                className="text-ink/60 hover:text-ink"
+                className="text-fg-muted/60 hover:text-fg"
               >
                 ✕
               </button>
@@ -238,7 +238,7 @@ export function CalendarView({ posts, mes, onMesChange, onSelecionar }: Props) {
                       onSelecionar(p);
                       setDiaAberto(null);
                     }}
-                    className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-ink/5"
+                    className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-primary/5"
                   >
                     {p.thumbnailUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -250,7 +250,7 @@ export function CalendarView({ posts, mes, onMesChange, onSelecionar }: Props) {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-ink/70">
+                        <span className="text-xs font-medium text-fg-muted/70">
                           {horaCurta(p.dataPublicacao ?? p.publicadoEm)}
                         </span>
                         <StatusBadge status={p.status} />
@@ -259,7 +259,7 @@ export function CalendarView({ posts, mes, onMesChange, onSelecionar }: Props) {
                         ))}
                       </div>
                       <p className="mt-1 truncate text-sm">{p.nome}</p>
-                      <p className="text-[11px] text-ink/55">
+                      <p className="text-[11px] text-fg-muted/55">
                         {p.cliente} · {p.tipo}
                       </p>
                     </div>

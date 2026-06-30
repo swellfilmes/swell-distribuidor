@@ -18,7 +18,7 @@ export function StepNotion({ empresaId, notionPronto, notionDbId, onAvancar }: P
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold leading-tight">Conectar Notion</h2>
-        <p className="mt-2 text-sm text-ink/70">
+        <p className="mt-2 text-sm text-fg-muted/70">
           Vamos criar uma database na sua workspace pra você aprovar/editar os
           posts antes deles irem pras redes. Tudo automático via OAuth.
         </p>
@@ -39,10 +39,10 @@ export function StepNotion({ empresaId, notionPronto, notionDbId, onAvancar }: P
           </div>
         </div>
       ) : (
-        <div className="space-y-4 rounded-xl border border-ink/10 bg-white p-5">
+        <div className="space-y-4 rounded-xl border border-bd/10 bg-surface p-5">
           <div>
             <div className="mb-2 text-sm font-medium">O que vai acontecer:</div>
-            <ol className="space-y-1.5 text-xs text-ink/70">
+            <ol className="space-y-1.5 text-xs text-fg-muted/70">
               <li>1. Clica no botão abaixo</li>
               <li>2. Notion abre um popup pedindo qual página compartilhar</li>
               <li>
@@ -55,12 +55,12 @@ export function StepNotion({ empresaId, notionPronto, notionDbId, onAvancar }: P
 
           <a
             href={`/api/notion/oauth/start?empresaId=${empresaId}`}
-            className="block w-full rounded-md bg-ink px-4 py-3 text-center text-sm font-medium text-cream hover:opacity-90"
+            className="block w-full rounded-md bg-primary px-4 py-3 text-center text-sm font-medium text-app hover:opacity-90"
           >
             🔌 Conectar Notion via OAuth
           </a>
 
-          <div className="text-[11px] text-ink/45">
+          <div className="text-[11px] text-fg-muted/45">
             Não tem conta Notion? Cria grátis em{' '}
             <a
               href="https://notion.so"
@@ -78,7 +78,7 @@ export function StepNotion({ empresaId, notionPronto, notionDbId, onAvancar }: P
       {notionPronto && (
         <button
           onClick={onAvancar}
-          className="w-full rounded-md bg-ink px-4 py-3 text-sm font-medium text-cream hover:opacity-90"
+          className="w-full rounded-md bg-primary px-4 py-3 text-sm font-medium text-app hover:opacity-90"
         >
           Próximo: conectar Zernio →
         </button>

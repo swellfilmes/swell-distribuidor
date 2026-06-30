@@ -117,7 +117,7 @@ export function StepZernio({
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold leading-tight">Conecte suas redes sociais</h2>
-        <p className="mt-2 text-sm text-ink/70">
+        <p className="mt-2 text-sm text-fg-muted/70">
           Clica em cada rede que você quer usar pra publicar. Vai abrir a tela
           oficial da rede pra você autorizar — depois volta sozinho pra cá.
         </p>
@@ -141,7 +141,7 @@ export function StepZernio({
       )}
 
       {carregando ? (
-        <div className="rounded-xl border border-ink/10 bg-white p-6 text-center text-sm text-ink/55">
+        <div className="rounded-xl border border-bd/10 bg-surface p-6 text-center text-sm text-fg-muted/55">
           Preparando seu cadastro no Zernio...
         </div>
       ) : (
@@ -156,8 +156,8 @@ export function StepZernio({
               <div
                 key={rede}
                 className={[
-                  'overflow-hidden rounded-xl border bg-white',
-                  conectada ? 'border-emerald-300' : 'border-ink/15',
+                  'overflow-hidden rounded-xl border bg-surface',
+                  conectada ? 'border-emerald-300' : 'border-bd/15',
                 ].join(' ')}
               >
                 <div className={`bg-gradient-to-r ${cfg.cor} px-4 py-3 text-white`}>
@@ -167,7 +167,7 @@ export function StepZernio({
                       <span className="font-medium">{cfg.nome}</span>
                     </div>
                     {conectada && (
-                      <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium">
+                      <span className="rounded-full bg-surface/20 px-2 py-0.5 text-[10px] font-medium">
                         ✓ conectado
                       </span>
                     )}
@@ -176,10 +176,10 @@ export function StepZernio({
                 <div className="p-4">
                   {conectada ? (
                     <div className="space-y-1">
-                      <div className="text-xs text-ink/70">
+                      <div className="text-xs text-fg-muted/70">
                         @{conta?.username ?? conta?.displayName ?? 'conta'}
                       </div>
-                      <div className="font-mono text-[10px] text-ink/40">
+                      <div className="font-mono text-[10px] text-fg-muted/40">
                         id: {conta?.id}
                       </div>
                     </div>
@@ -202,7 +202,7 @@ export function StepZernio({
         </div>
       )}
 
-      <details className="rounded-md border border-ink/10 bg-ink/[0.02] px-3 py-2 text-xs text-ink/65">
+      <details className="rounded-md border border-bd/10 bg-primary/[0.02] px-3 py-2 text-xs text-fg-muted/65">
         <summary className="cursor-pointer">Como funciona</summary>
         <p className="mt-2">
           Cada rede que você conectar fica isolada da sua "conta" — usamos um
@@ -216,14 +216,14 @@ export function StepZernio({
         <button
           onClick={() => void sincronizar()}
           disabled={carregando}
-          className="flex-1 rounded-md border border-ink/15 px-4 py-3 text-sm font-medium hover:bg-ink/5 disabled:opacity-40"
+          className="flex-1 rounded-md border border-bd/15 px-4 py-3 text-sm font-medium hover:bg-primary/5 disabled:opacity-40"
         >
           Atualizar status
         </button>
         {podeAvancar && (
           <button
             onClick={onAvancar}
-            className="flex-1 rounded-md bg-ink px-4 py-3 text-sm font-medium text-cream hover:opacity-90"
+            className="flex-1 rounded-md bg-primary px-4 py-3 text-sm font-medium text-app hover:opacity-90"
           >
             Próximo: pronto! →
           </button>

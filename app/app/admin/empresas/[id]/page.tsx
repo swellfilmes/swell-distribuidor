@@ -29,13 +29,13 @@ export default async function EmpresaDetalhe({ params }: Props) {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <header>
-        <Link href="/app/admin" className="text-xs text-ink/55 hover:underline">
+        <Link href="/app/admin" className="text-xs text-fg-muted/55 hover:underline">
           ← Voltar
         </Link>
         <div className="mt-2 flex items-end justify-between">
           <div>
             <h1 className="text-2xl font-semibold">{empresa.nome}</h1>
-            <p className="text-sm text-ink/60">
+            <p className="text-sm text-fg-muted/60">
               slug: <code>{empresa.slug}</code> · id: {empresa.id}
             </p>
           </div>

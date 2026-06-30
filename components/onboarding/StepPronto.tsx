@@ -17,7 +17,7 @@ export function StepPronto({ empresaNome, empresaSlug }: Props) {
         <h2 className="text-2xl font-semibold leading-tight">
           {empresaNome} pronta pra publicar
         </h2>
-        <p className="mt-2 text-sm text-ink/70">
+        <p className="mt-2 text-sm text-fg-muted/70">
           Notion e Zernio conectados. Agora você pode subir vídeos, fotos ou
           carrosséis, ver a IA gerar as legendas, aprovar no Notion e publicar.
         </p>
@@ -26,28 +26,28 @@ export function StepPronto({ empresaNome, empresaSlug }: Props) {
       <div className="space-y-2 text-left">
         <Link
           href={`/app/upload?empresa=${empresaSlug}`}
-          className="block rounded-lg border border-ink/10 bg-white p-4 hover:bg-ink/[0.02]"
+          className="block rounded-lg border border-bd/10 bg-surface p-4 hover:bg-primary/[0.02]"
         >
           <div className="font-medium">📤 Subir primeira mídia</div>
-          <div className="mt-1 text-xs text-ink/55">
+          <div className="mt-1 text-xs text-fg-muted/55">
             Arrasta um .mp4, .jpg ou .png — a IA classifica e gera as legendas em ~30s.
           </div>
         </Link>
         <Link
           href={`/app/posts?empresa=${empresaSlug}`}
-          className="block rounded-lg border border-ink/10 bg-white p-4 hover:bg-ink/[0.02]"
+          className="block rounded-lg border border-bd/10 bg-surface p-4 hover:bg-primary/[0.02]"
         >
           <div className="font-medium">📋 Ver posts agendados</div>
-          <div className="mt-1 text-xs text-ink/55">
+          <div className="mt-1 text-xs text-fg-muted/55">
             Calendário das publicações futuras e histórico.
           </div>
         </Link>
         <Link
           href={`/app/configuracoes?empresa=${empresaSlug}`}
-          className="block rounded-lg border border-ink/10 bg-white p-4 hover:bg-ink/[0.02]"
+          className="block rounded-lg border border-bd/10 bg-surface p-4 hover:bg-primary/[0.02]"
         >
           <div className="font-medium">⚙️ Configurações da empresa</div>
-          <div className="mt-1 text-xs text-ink/55">
+          <div className="mt-1 text-xs text-fg-muted/55">
             Editar nome, atualizar integrações, gerenciar membros.
           </div>
         </Link>

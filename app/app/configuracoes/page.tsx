@@ -24,31 +24,31 @@ export default async function ConfiguracoesPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <header>
         <h1 className="text-2xl font-semibold">Configurações</h1>
-        <p className="text-sm text-ink/60">
+        <p className="text-sm text-fg-muted/60">
           Seu perfil, empresas que você acessa, e as integrações da empresa ativa.
         </p>
       </header>
 
-      <section className="rounded-lg border border-ink/10 bg-white p-5">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-ink/60">
+      <section className="rounded-lg border border-bd/10 bg-surface p-5">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted/60">
           Seu perfil
         </h2>
         <dl className="mt-3 grid grid-cols-[120px_1fr] gap-y-2 text-sm">
-          <dt className="text-ink/60">Nome</dt>
+          <dt className="text-fg-muted/60">Nome</dt>
           <dd>{user?.nome ?? '—'}</dd>
-          <dt className="text-ink/60">Email</dt>
+          <dt className="text-fg-muted/60">Email</dt>
           <dd>{user?.email}</dd>
-          <dt className="text-ink/60">Role</dt>
+          <dt className="text-fg-muted/60">Role</dt>
           <dd>{user?.role}</dd>
         </dl>
       </section>
 
-      <section className="rounded-lg border border-ink/10 bg-white p-5">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-ink/60">
+      <section className="rounded-lg border border-bd/10 bg-surface p-5">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted/60">
           Empresas que você acessa
         </h2>
         {empresas.length === 0 ? (
-          <p className="mt-2 text-sm text-ink/60">Nenhuma vinculada ainda.</p>
+          <p className="mt-2 text-sm text-fg-muted/60">Nenhuma vinculada ainda.</p>
         ) : (
           <ul className="mt-3 space-y-1 text-sm">
             {empresas.map((e) => (
@@ -61,7 +61,7 @@ export default async function ConfiguracoesPage() {
                     </span>
                   )}
                 </span>
-                <span className="text-xs uppercase tracking-wide text-ink/40">
+                <span className="text-xs uppercase tracking-wide text-fg-muted/40">
                   {e.role}
                 </span>
               </li>
@@ -89,7 +89,7 @@ export default async function ConfiguracoesPage() {
 
             <div className="space-y-4">
               <div>
-                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-ink/60">
+                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted/60">
                   Notion
                 </div>
                 <Suspense fallback={null}>
@@ -102,7 +102,7 @@ export default async function ConfiguracoesPage() {
               </div>
 
               <div>
-                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-ink/60">
+                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted/60">
                   Redes sociais (Zernio)
                 </div>
                 {/* Empresa-testador (sem zernioApiKey própria) usa o fluxo novo

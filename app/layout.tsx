@@ -35,7 +35,7 @@ export default function RootLayout({
       afterSignOutUrl="/"
     >
       <html lang="pt-BR" className={`${inter.variable} ${dmSerif.variable}`}>
-        <body className="min-h-screen bg-app text-text-primary antialiased">{children}</body>
+        <body className="min-h-screen bg-app text-fg antialiased">{children}</body>
       </html>
     </ClerkProvider>
   );

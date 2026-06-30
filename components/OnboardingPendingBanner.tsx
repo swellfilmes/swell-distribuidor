@@ -26,7 +26,7 @@ export function OnboardingPendingBanner({
   return (
     <div className="border-b border-primary/25 bg-primary/8 px-4 py-2.5 text-[13px] sm:px-8">
       <div className="mx-auto flex max-w-7xl flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-text-primary/90">
+        <div className="text-fg/90">
           <span className="mr-1.5 inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
           <span className="font-medium">{empresaNome}</span> ainda precisa conectar{' '}
           <b className="text-primary">{faltam.join(' e ')}</b> pra publicar.

@@ -19,7 +19,7 @@ export function EmpresaSelector({ empresas, ativaSlug }: Props) {
 
   if (empresas.length === 0) {
     return (
-      <div className="text-sm text-text-secondary/60">
+      <div className="text-sm text-fg-muted/60">
         Nenhuma empresa vinculada à sua conta.
       </div>
     );
@@ -40,7 +40,7 @@ export function EmpresaSelector({ empresas, ativaSlug }: Props) {
   return (
     <div className="relative">
       <select
-        className="appearance-none rounded-lg border border-border-soft/40 bg-surface/60 py-1.5 pl-3 pr-8 text-[13px] font-medium text-text-primary hover:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60"
+        className="appearance-none rounded-lg border border-bd/40 bg-surface/60 py-1.5 pl-3 pr-8 text-[13px] font-medium text-fg hover:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60"
         value={ativaSlug}
         disabled={pending}
         onChange={(e) => trocar(e.target.value)}
@@ -53,7 +53,7 @@ export function EmpresaSelector({ empresas, ativaSlug }: Props) {
       </select>
       <span
         aria-hidden
-        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary/60"
+        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted/60"
       >
         ▾
       </span>

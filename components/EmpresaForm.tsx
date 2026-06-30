@@ -222,7 +222,7 @@ export function EmpresaForm({ modo, inicial, empresaId }: Props) {
             placeholder="(opcional)"
           />
         </div>
-        <p className="text-xs text-ink/55">
+        <p className="text-xs text-fg-muted/55">
           Pra pegar os account IDs: conecta as redes no painel Zernio, depois
           rode <code>npm run distribuir -- --empresa &lt;slug&gt; --listar-contas</code> pra
           ver os IDs (ou veja o resultado do botão "Testar conexão" abaixo).
@@ -230,7 +230,7 @@ export function EmpresaForm({ modo, inicial, empresaId }: Props) {
       </Bloco>
 
       {test && (
-        <div className="rounded-md border border-ink/10 bg-white p-4 text-sm">
+        <div className="rounded-md border border-bd/10 bg-surface p-4 text-sm">
           <h4 className="mb-2 font-medium">Resultado do teste:</h4>
           {test.notion && (
             <p>
@@ -280,14 +280,14 @@ export function EmpresaForm({ modo, inicial, empresaId }: Props) {
         <button
           onClick={testar}
           disabled={testando || !v.notionApiKey || !v.zernioApiKey}
-          className="rounded-md border border-ink/20 px-3 py-2 text-sm font-medium text-ink/80 hover:bg-ink/5 disabled:opacity-40"
+          className="rounded-md border border-bd/20 px-3 py-2 text-sm font-medium text-fg-muted/80 hover:bg-primary/5 disabled:opacity-40"
         >
           {testando ? 'Testando…' : 'Testar conexão'}
         </button>
         <button
           onClick={salvar}
           disabled={salvando || !v.nome || !v.slug || !v.notionApiKey || !v.notionDbId || !v.zernioApiKey}
-          className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-cream hover:opacity-90 disabled:opacity-40"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-app hover:opacity-90 disabled:opacity-40"
         >
           {salvando ? 'Salvando…' : modo === 'criar' ? 'Criar empresa' : 'Salvar alterações'}
         </button>
@@ -298,8 +298,8 @@ export function EmpresaForm({ modo, inicial, empresaId }: Props) {
 
 function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-ink/10 bg-white p-4">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink/60">
+    <section className="rounded-lg border border-bd/10 bg-surface p-4">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-muted/60">
         {titulo}
       </h3>
       <div className="space-y-3">{children}</div>
@@ -326,16 +326,16 @@ function Campo({
 }) {
   return (
     <label className="block">
-      <span className="block text-xs font-medium text-ink/70">{label}</span>
+      <span className="block text-xs font-medium text-fg-muted/70">{label}</span>
       <input
         type={tipo === 'senha' ? 'password' : 'text'}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        className="mt-1 w-full rounded-md border border-ink/15 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink/20 disabled:bg-ink/5 disabled:opacity-60"
+        className="mt-1 w-full rounded-md border border-bd/15 bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-primary/5 disabled:opacity-60"
       />
-      {hint && <span className="mt-1 block text-[11px] text-ink/50">{hint}</span>}
+      {hint && <span className="mt-1 block text-[11px] text-fg-muted/50">{hint}</span>}
     </label>
   );
 }

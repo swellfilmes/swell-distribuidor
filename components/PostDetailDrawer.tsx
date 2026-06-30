@@ -31,11 +31,11 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
   return (
     <div className="fixed inset-0 z-40">
       <div
-        className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-primary/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <aside className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col overflow-hidden bg-cream shadow-xl">
-        <header className="flex items-start justify-between border-b border-ink/10 px-6 py-4">
+      <aside className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col overflow-hidden bg-app shadow-xl">
+        <header className="flex items-start justify-between border-b border-bd/10 px-6 py-4">
           <div className="min-w-0 pr-4">
             <div className="flex flex-wrap items-center gap-2">
               <InlineStatusEdit
@@ -55,7 +55,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
             <h2 className="mt-2 truncate text-lg font-semibold" title={post.nome}>
               {post.nome}
             </h2>
-            <p className="text-xs text-ink/60">
+            <p className="text-xs text-fg-muted/60">
               {post.cliente} · {post.tipo} · {post.orientacao}
             </p>
             {erro && (
@@ -64,7 +64,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
           </div>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-ink/60 transition-colors hover:bg-ink/5 hover:text-ink"
+            className="rounded-md p-1 text-fg-muted/60 transition-colors hover:bg-primary/5 hover:text-app"
             aria-label="Fechar"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -84,7 +84,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
             <img
               src={post.thumbnailUrl}
               alt=""
-              className="mb-4 w-full rounded-lg border border-ink/10 object-cover"
+              className="mb-4 w-full rounded-lg border border-bd/10 object-cover"
             />
           )}
 
@@ -96,11 +96,11 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
               url.endsWith('.png') ||
               url.endsWith('.webp');
             return (
-              <details className="mb-4 rounded-lg border border-ink/10 bg-white">
-                <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-ink/80">
+              <details className="mb-4 rounded-lg border border-bd/10 bg-surface">
+                <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-fg-muted/80">
                   Ver {ehImagem ? 'imagem' : 'vídeo'}
                 </summary>
-                <div className="border-t border-ink/10 p-3">
+                <div className="border-t border-bd/10 p-3">
                   {ehImagem ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -122,12 +122,12 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
           })()}
 
           <Section title="Resumo">
-            <p className="text-sm text-ink/80">{post.resumo || '—'}</p>
+            <p className="text-sm text-fg-muted/80">{post.resumo || '—'}</p>
           </Section>
 
           <Section title="Agendamento">
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-ink/60">DataPublicacao:</span>
+              <span className="text-fg-muted/60">DataPublicacao:</span>
               <InlineDateEdit
                 iso={post.dataPublicacao}
                 pendente={pendente}
@@ -140,11 +140,11 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
               />
             </div>
             <dl className="mt-2 grid grid-cols-[140px_1fr] gap-y-1 text-sm">
-              <dt className="text-ink/60">Publicado em</dt>
+              <dt className="text-fg-muted/60">Publicado em</dt>
               <dd>{formatarDataHora(post.publicadoEm)}</dd>
-              <dt className="text-ink/60">Criado em</dt>
+              <dt className="text-fg-muted/60">Criado em</dt>
               <dd>{formatarData(post.criadoEm)}</dd>
-              <dt className="text-ink/60">Atualizado em</dt>
+              <dt className="text-fg-muted/60">Atualizado em</dt>
               <dd>{formatarDataHora(post.atualizadoEm)}</dd>
             </dl>
           </Section>
@@ -178,23 +178,23 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
               </div>
             ) : post.copyResumo ? (
               <>
-                <p className="mb-2 text-xs text-ink/50">
+                <p className="mb-2 text-xs text-fg-muted/50">
                   Esse post não tem PlanoJSON estruturado (provavelmente foi
                   criado antes do upgrade). Rode <code>--reparar-copy</code> pra
                   poder editar por rede aqui.
                 </p>
-                <pre className="whitespace-pre-wrap rounded-md border border-ink/10 bg-white p-3 text-xs text-ink/80">
+                <pre className="whitespace-pre-wrap rounded-md border border-bd/10 bg-surface p-3 text-xs text-fg-muted/80">
                   {post.copyResumo}
                 </pre>
               </>
             ) : (
-              <p className="text-sm text-ink/60">Sem copy ainda.</p>
+              <p className="text-sm text-fg-muted/60">Sem copy ainda.</p>
             )}
           </Section>
 
           {post.logPublicacao && (
             <Section title="Log de publicação">
-              <pre className="whitespace-pre-wrap rounded-md border border-ink/10 bg-white p-3 text-xs text-ink/80">
+              <pre className="whitespace-pre-wrap rounded-md border border-bd/10 bg-surface p-3 text-xs text-fg-muted/80">
                 {post.logPublicacao}
               </pre>
             </Section>
@@ -215,9 +215,9 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
                 </li>
               )}
               {post.zernioPostId && (
-                <li className="text-ink/70">
+                <li className="text-fg-muted/70">
                   Zernio post id:{' '}
-                  <code className="rounded bg-white px-1 py-0.5 text-xs ring-1 ring-ink/10">
+                  <code className="rounded bg-surface px-1 py-0.5 text-xs ring-1 ring-primary/10">
                     {post.zernioPostId}
                   </code>
                 </li>
@@ -260,7 +260,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
                   onSalvar({ status: 'Aguardando' }, { status: 'Aguardando' })
                 }
                 disabled={pendente || post.status === 'Aguardando'}
-                className="rounded-md border border-ink/15 px-3 py-1.5 text-sm font-medium text-ink/80 hover:bg-ink/5 disabled:opacity-40"
+                className="rounded-md border border-bd/15 px-3 py-1.5 text-sm font-medium text-fg-muted/80 hover:bg-primary/5 disabled:opacity-40"
               >
                 ↺ Voltar pra Aguardando
               </button>
@@ -275,7 +275,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-5">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/50">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-muted/50">
         {title}
       </h3>
       {children}
@@ -326,19 +326,19 @@ function CopyRedeEditor({
   }
 
   return (
-    <div className="rounded-md border border-ink/10 bg-white p-3">
+    <div className="rounded-md border border-bd/10 bg-surface p-3">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <RedeBadge rede={rede} />
           {titulo && (
-            <span className="text-xs font-medium text-ink/80">{titulo}</span>
+            <span className="text-xs font-medium text-fg-muted/80">{titulo}</span>
           )}
         </div>
         {!editando && (
           <button
             onClick={() => setEditando(true)}
             disabled={pendente}
-            className="text-xs text-ink/60 hover:text-ink hover:underline disabled:opacity-40"
+            className="text-xs text-fg-muted/60 hover:text-fg hover:underline disabled:opacity-40"
           >
             editar
           </button>
@@ -351,27 +351,27 @@ function CopyRedeEditor({
             onChange={(e) => setValorDesc(e.target.value)}
             disabled={pendente}
             rows={Math.max(3, Math.min(12, valorDesc.split('\n').length + 1))}
-            className="w-full resize-y rounded border border-ink/15 bg-cream/50 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink/20"
+            className="w-full resize-y rounded border border-bd/15 bg-cream/50 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <input
             value={valorTags}
             onChange={(e) => setValorTags(e.target.value)}
             disabled={pendente}
             placeholder="#hashtag1 #hashtag2"
-            className="mt-1 w-full rounded border border-ink/15 bg-cream/50 p-2 text-xs focus:outline-none focus:ring-2 focus:ring-ink/20"
+            className="mt-1 w-full rounded border border-bd/15 bg-cream/50 p-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <div className="mt-2 flex justify-end gap-2">
             <button
               onClick={cancelar}
               disabled={pendente}
-              className="rounded-md px-2 py-1 text-xs text-ink/60 hover:bg-ink/5 disabled:opacity-40"
+              className="rounded-md px-2 py-1 text-xs text-fg-muted/60 hover:bg-primary/5 disabled:opacity-40"
             >
               cancelar
             </button>
             <button
               onClick={salvar}
               disabled={pendente || !sujo}
-              className="rounded-md bg-ink px-3 py-1 text-xs font-medium text-cream hover:opacity-90 disabled:opacity-40"
+              className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-app hover:opacity-90 disabled:opacity-40"
             >
               {pendente ? 'salvando…' : 'salvar'}
             </button>
@@ -379,9 +379,9 @@ function CopyRedeEditor({
         </>
       ) : (
         <>
-          <p className="whitespace-pre-wrap text-sm text-ink/85">{descricao}</p>
+          <p className="whitespace-pre-wrap text-sm text-fg-muted/85">{descricao}</p>
           {hashtags.length > 0 && (
-            <p className="mt-1 text-xs text-ink/55">{hashtags.join(' ')}</p>
+            <p className="mt-1 text-xs text-fg-muted/55">{hashtags.join(' ')}</p>
           )}
         </>
       )}

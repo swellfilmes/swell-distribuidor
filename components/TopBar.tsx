@@ -8,7 +8,7 @@ interface Props {
 
 export function TopBar({ empresas, ativaSlug }: Props) {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border-soft/40 bg-app/80 px-6 backdrop-blur-md">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-bd/40 bg-app/80 px-6 backdrop-blur-md">
       <div className="flex flex-1 items-center gap-3">
         {ativaSlug !== null && (
           <EmpresaSelector empresas={empresas} ativaSlug={ativaSlug} />
@@ -17,7 +17,7 @@ export function TopBar({ empresas, ativaSlug }: Props) {
         <div className="relative ml-2 hidden max-w-md flex-1 sm:block">
           <span
             aria-hidden
-            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text-secondary/60"
+            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-muted/60"
           >
             <svg
               viewBox="0 0 24 24"
@@ -35,9 +35,9 @@ export function TopBar({ empresas, ativaSlug }: Props) {
           <input
             type="search"
             placeholder="Buscar posts, clientes, redes…"
-            className="h-8 w-full rounded-lg border border-border-soft/40 bg-surface/60 pl-8 pr-3 text-[13px] text-text-primary placeholder-text-secondary/55 focus:border-primary/60 focus:bg-surface focus:outline-none"
+            className="h-8 w-full rounded-lg border border-bd/40 bg-surface/60 pl-8 pr-3 text-[13px] text-fg placeholder:text-fg-muted/55 focus:border-primary/60 focus:bg-surface focus:outline-none"
           />
-          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-border-soft/40 bg-app/60 px-1.5 py-0.5 font-mono text-[10px] text-text-secondary/60">
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-bd/40 bg-app/60 px-1.5 py-0.5 font-mono text-[10px] text-fg-muted/60">
             ⌘K
           </span>
         </div>

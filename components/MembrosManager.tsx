@@ -84,8 +84,8 @@ export function MembrosManager({ empresaId, membros, convites }: Props) {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-lg border border-ink/10 bg-white p-4">
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink/60">
+      <section className="rounded-lg border border-bd/10 bg-surface p-4">
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-muted/60">
           Convidar pessoa
         </h3>
         <div className="flex flex-wrap items-end gap-2">
@@ -94,12 +94,12 @@ export function MembrosManager({ empresaId, membros, convites }: Props) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="email@exemplo.com"
-            className="flex-1 rounded-md border border-ink/15 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink/20"
+            className="flex-1 rounded-md border border-bd/15 bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as 'owner' | 'editor')}
-            className="rounded-md border border-ink/15 bg-white px-2 py-2 text-sm"
+            className="rounded-md border border-bd/15 bg-surface px-2 py-2 text-sm"
           >
             <option value="editor">editor</option>
             <option value="owner">owner</option>
@@ -107,7 +107,7 @@ export function MembrosManager({ empresaId, membros, convites }: Props) {
           <button
             onClick={convidar}
             disabled={pending || !email}
-            className="rounded-md bg-ink px-3 py-2 text-sm font-medium text-cream hover:opacity-90 disabled:opacity-40"
+            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-app hover:opacity-90 disabled:opacity-40"
           >
             {pending ? 'Convidando…' : 'Convidar'}
           </button>
@@ -123,19 +123,19 @@ export function MembrosManager({ empresaId, membros, convites }: Props) {
         )}
       </section>
 
-      <section className="rounded-lg border border-ink/10 bg-white p-4">
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink/60">
+      <section className="rounded-lg border border-bd/10 bg-surface p-4">
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-muted/60">
           Membros ativos ({membros.length})
         </h3>
         {membros.length === 0 ? (
-          <p className="text-sm text-ink/55">Ninguém ainda.</p>
+          <p className="text-sm text-fg-muted/55">Ninguém ainda.</p>
         ) : (
           <ul className="divide-y divide-ink/5">
             {membros.map((m) => (
               <li key={m.userId} className="flex items-center justify-between py-2 text-sm">
                 <div>
                   <p className="font-medium">{m.nome ?? m.email}</p>
-                  <p className="text-xs text-ink/55">
+                  <p className="text-xs text-fg-muted/55">
                     {m.email} · <span className="uppercase tracking-wide">{m.role}</span>
                   </p>
                 </div>
@@ -151,25 +151,25 @@ export function MembrosManager({ empresaId, membros, convites }: Props) {
         )}
       </section>
 
-      <section className="rounded-lg border border-ink/10 bg-white p-4">
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink/60">
+      <section className="rounded-lg border border-bd/10 bg-surface p-4">
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-muted/60">
           Convites pendentes ({convites.length})
         </h3>
         {convites.length === 0 ? (
-          <p className="text-sm text-ink/55">Nenhum.</p>
+          <p className="text-sm text-fg-muted/55">Nenhum.</p>
         ) : (
           <ul className="divide-y divide-ink/5">
             {convites.map((c) => (
               <li key={c.id} className="flex items-center justify-between py-2 text-sm">
                 <div>
                   <p className="font-medium">{c.email}</p>
-                  <p className="text-xs text-ink/55">
+                  <p className="text-xs text-fg-muted/55">
                     Vai virar <strong>{c.role}</strong> quando logar
                   </p>
                 </div>
                 <button
                   onClick={() => cancelar(c.id)}
-                  className="text-xs text-ink/60 hover:underline"
+                  className="text-xs text-fg-muted/60 hover:underline"
                 >
                   cancelar
                 </button>

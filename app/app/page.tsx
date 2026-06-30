@@ -19,7 +19,7 @@ export default async function DashboardHome() {
         <h1 className="text-2xl font-semibold">
           Olá, {user?.nome ?? user?.email}.
         </h1>
-        <p className="text-ink/60">
+        <p className="text-fg-muted/60">
           {empresa
             ? `Empresa ativa: ${empresa.nome} (${empresa.slug}).`
             : 'Você ainda não tem empresa vinculada — peça pro admin te adicionar ou use um link de convite.'}
@@ -85,10 +85,10 @@ function CartaoAcao({
   return (
     <Link
       href={href}
-      className="block rounded-lg border border-ink/10 bg-white p-4 hover:bg-ink/[0.02]"
+      className="block rounded-lg border border-bd/10 bg-surface p-4 hover:bg-primary/[0.02]"
     >
       <div className="font-medium">{titulo}</div>
-      <div className="mt-1 text-xs text-ink/55">{descricao}</div>
+      <div className="mt-1 text-xs text-fg-muted/55">{descricao}</div>
     </Link>
   );
 }

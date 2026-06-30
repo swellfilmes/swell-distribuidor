@@ -41,13 +41,13 @@ export default async function PaginaConvite({ params }: Props) {
               <path d="M3 18c3 0 3-4 6-4s3 4 6 4 3-4 6-4" />
             </svg>
           </div>
-          <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.2em] text-text-secondary">
+          <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.2em] text-fg-muted">
             Swell Mermaid
           </div>
-          <h1 className="font-serif text-[32px] leading-tight text-text-primary">
+          <h1 className="font-serif text-[32px] leading-tight text-fg">
             Você foi convidado a testar
           </h1>
-          <p className="mt-3 text-[14px] text-text-secondary">
+          <p className="mt-3 text-[14px] text-fg-muted">
             Crie sua conta e configure sua empresa em ~5 minutos.
           </p>
         </header>
@@ -59,7 +59,7 @@ export default async function PaginaConvite({ params }: Props) {
                 ? 'Este convite já foi usado'
                 : 'Convite inválido ou não encontrado'}
             </div>
-            <p className="text-text-secondary">
+            <p className="text-fg-muted">
               {validacao.motivo === 'ja-consumido'
                 ? 'Cada link de convite só pode ser usado uma vez. Peça um novo pra quem te enviou.'
                 : 'Verifique se você copiou o link inteiro. Se o link estiver certo, peça um novo pra quem te enviou.'}
@@ -67,7 +67,7 @@ export default async function PaginaConvite({ params }: Props) {
             <div className="mt-4">
               <Link
                 href="/"
-                className="text-xs text-text-primary underline-offset-4 hover:underline"
+                className="text-xs text-fg underline-offset-4 hover:underline"
               >
                 Voltar pra página inicial
               </Link>

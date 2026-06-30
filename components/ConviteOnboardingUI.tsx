@@ -44,12 +44,12 @@ export function ConviteOnboardingUI({
     const signupUrl = `/sign-up?redirect_url=${encodeURIComponent(`/convite/${token}`)}`;
     const signinUrl = `/sign-in?redirect_url=${encodeURIComponent(`/convite/${token}`)}`;
     return (
-      <div className="space-y-4 rounded-2xl border border-border-soft/40 bg-surface/60 p-6 backdrop-blur">
-        <div className="text-sm text-text-secondary">
+      <div className="space-y-4 rounded-2xl border border-bd/40 bg-surface/60 p-6 backdrop-blur">
+        <div className="text-sm text-fg-muted">
           Antes de criar sua empresa, faça login ou crie sua conta.
         </div>
         {emailSugerido && (
-          <div className="rounded-lg border border-primary/20 bg-primary/8 px-3 py-2 text-xs text-text-primary">
+          <div className="rounded-lg border border-primary/20 bg-primary/8 px-3 py-2 text-xs text-fg">
             💡 Quem te convidou sugeriu o email <b className="text-primary">{emailSugerido}</b> — você pode usar esse ou outro.
           </div>
         )}
@@ -62,7 +62,7 @@ export function ConviteOnboardingUI({
           </a>
           <a
             href={signinUrl}
-            className="flex-1 rounded-lg border border-border-soft/40 px-4 py-3 text-center text-sm font-medium text-text-primary hover:bg-surface-2/60"
+            className="flex-1 rounded-lg border border-bd/40 px-4 py-3 text-center text-sm font-medium text-fg hover:bg-surface-2/60"
           >
             Já tenho conta
           </a>
@@ -97,10 +97,10 @@ export function ConviteOnboardingUI({
   return (
     <form
       onSubmit={submeter}
-      className="space-y-5 rounded-2xl border border-border-soft/40 bg-surface/60 p-6 backdrop-blur"
+      className="space-y-5 rounded-2xl border border-bd/40 bg-surface/60 p-6 backdrop-blur"
     >
       <div className="space-y-1.5">
-        <label className="text-[13px] font-medium text-text-primary">Nome da sua empresa</label>
+        <label className="text-[13px] font-medium text-fg">Nome da sua empresa</label>
         <input
           type="text"
           value={nome}
@@ -108,13 +108,13 @@ export function ConviteOnboardingUI({
           placeholder="Ex: Becogelato"
           required
           autoFocus
-          className="w-full rounded-lg border border-border-soft/40 bg-surface-2/60 px-3 py-2.5 text-sm text-text-primary placeholder-text-secondary/50 focus:border-primary/60 focus:bg-surface-2 focus:outline-none"
+          className="w-full rounded-lg border border-bd/40 bg-surface-2/60 px-3 py-2.5 text-sm text-fg placeholder:text-fg-muted/50 focus:border-primary/60 focus:bg-surface-2 focus:outline-none"
         />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-[13px] font-medium text-text-primary">
-          Slug <span className="text-text-secondary/60">(URL, gerado automaticamente)</span>
+        <label className="text-[13px] font-medium text-fg">
+          Slug <span className="text-fg-muted/60">(URL, gerado automaticamente)</span>
         </label>
         <input
           type="text"
@@ -126,9 +126,9 @@ export function ConviteOnboardingUI({
           pattern="[a-z0-9-]+"
           placeholder="becogelato"
           required
-          className="w-full rounded-lg border border-border-soft/40 bg-surface-2/60 px-3 py-2.5 font-mono text-sm text-text-primary placeholder-text-secondary/50 focus:border-primary/60 focus:bg-surface-2 focus:outline-none"
+          className="w-full rounded-lg border border-bd/40 bg-surface-2/60 px-3 py-2.5 font-mono text-sm text-fg placeholder:text-fg-muted/50 focus:border-primary/60 focus:bg-surface-2 focus:outline-none"
         />
-        <div className="text-[11px] text-text-secondary">
+        <div className="text-[11px] text-fg-muted">
           Só letras minúsculas, números e hífens. Não pode mudar depois.
         </div>
       </div>
@@ -147,7 +147,7 @@ export function ConviteOnboardingUI({
         {criando ? 'Criando...' : 'Criar minha empresa →'}
       </button>
 
-      <p className="text-center text-[11px] text-text-secondary">
+      <p className="text-center text-[11px] text-fg-muted">
         Próximo passo: você conecta seu Notion e suas redes no wizard.
       </p>
     </form>

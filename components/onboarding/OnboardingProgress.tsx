@@ -19,8 +19,8 @@ export function OnboardingProgress({ passos }: Props) {
                     status === 'completo'
                       ? 'bg-emerald-500 text-white ring-emerald-500'
                       : status === 'ativo'
-                        ? 'bg-ink text-cream ring-ink'
-                        : 'bg-white text-ink/40 ring-ink/15',
+                        ? 'bg-primary text-app ring-primary'
+                        : 'bg-surface text-fg-muted/40 ring-primary/15',
                   ].join(' ')}
                 >
                   {p.completo ? '✓' : i + 1}
@@ -28,7 +28,7 @@ export function OnboardingProgress({ passos }: Props) {
                 <div
                   className={[
                     'mt-1.5 hidden text-[10px] uppercase tracking-wide sm:block',
-                    status === 'ativo' ? 'text-ink' : 'text-ink/50',
+                    status === 'ativo' ? 'text-fg' : 'text-fg-muted/50',
                   ].join(' ')}
                 >
                   {p.label}
@@ -38,7 +38,7 @@ export function OnboardingProgress({ passos }: Props) {
                 <div
                   className={[
                     'mx-1 h-0.5 flex-1 rounded',
-                    p.completo ? 'bg-emerald-500' : 'bg-ink/15',
+                    p.completo ? 'bg-emerald-500' : 'bg-primary/15',
                   ].join(' ')}
                 />
               )}
