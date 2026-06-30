@@ -34,53 +34,87 @@ export function parseCopyField(texto: string): Map<Rede, string> {
   return mapa;
 }
 
-async function lerCopyDoNotion(
+interface NotionLeitura {
+  copy: string;
+  redes: Rede[] | null;
+}
+
+async function lerPropriedadesDoNotion(
   tenant: TenantConfig,
   pageId: string,
-): Promise<string> {
+): Promise<NotionLeitura> {
   const notion = notionDo(tenant);
   const page = await notion.pages.retrieve({ page_id: pageId });
-  if (!('properties' in page)) return '';
-  const prop = page.properties['Copy'];
-  if (!prop || prop.type !== 'rich_text') return '';
-  return prop.rich_text.map((t) => ('plain_text' in t ? t.plain_text : '')).join('');
+  if (!('properties' in page)) return { copy: '', redes: null };
+
+  // Copy
+  let copy = '';
+  const propCopy = page.properties['Copy'];
+  if (propCopy && propCopy.type === 'rich_text') {
+    copy = propCopy.rich_text.map((t) => ('plain_text' in t ? t.plain_text : '')).join('');
+  }
+
+  // Redes (multi_select). null = sem propriedade configurada na DB; lista vazia
+  // = usuário tirou TODAS as redes (pra não publicar em nenhuma).
+  let redes: Rede[] | null = null;
+  const propRedes = page.properties['Redes'];
+  if (propRedes && propRedes.type === 'multi_select') {
+    redes = propRedes.multi_select
+      .map((s) => s.name.toLowerCase())
+      .filter((s): s is Rede => REDES.includes(s as Rede));
+  }
+
+  return { copy, redes };
 }
 
 export interface ResultadoReconciliacao {
   plano: PlanoPublicacao;
   redesEditadas: Rede[];
+  redesFiltradas: Rede[];
 }
 
 /**
- * Lê o campo Copy do Notion e, pra cada rede que o usuário editou, sobrescreve
- * a descrição do plano. Limpa hashtags das redes editadas pra não duplicar
- * (o usuário provavelmente colou hashtags inline na descrição).
+ * Sincroniza o plano com o estado ATUAL do Notion antes de publicar. Isso é
+ * a fonte de verdade — o usuário pode ter editado depois do ingest:
+ *  - `Redes` (multi_select): rede REMOVIDA aqui é tirada do plano. Sem
+ *    isso, desmarcar TikTok no Notion não tinha efeito.
+ *  - `Copy` (rich_text): texto formatado `[rede] descrição...` por rede.
+ *    Quando editado pelo humano, sobrescreve a descrição original.
  */
 export async function reconciliarPlanoComNotion(
   tenant: TenantConfig,
   pageId: string,
   plano: PlanoPublicacao,
 ): Promise<ResultadoReconciliacao> {
-  const copyDoNotion = await lerCopyDoNotion(tenant, pageId);
-  const edits = parseCopyField(copyDoNotion);
+  const { copy, redes: redesDoNotion } = await lerPropriedadesDoNotion(tenant, pageId);
 
-  if (edits.size === 0) {
-    return { plano, redesEditadas: [] };
+  // 1. Filtra redes pelo que o usuário deixou marcado no Notion.
+  let novasRedes = plano.redes;
+  const redesFiltradas: Rede[] = [];
+  if (redesDoNotion !== null) {
+    novasRedes = plano.redes.filter((r) => redesDoNotion.includes(r));
+    for (const r of plano.redes) {
+      if (!redesDoNotion.includes(r)) redesFiltradas.push(r);
+    }
   }
 
+  // 2. Atualiza copy pelas edições do humano.
+  const edits = parseCopyField(copy);
   const redesEditadas: Rede[] = [];
-  const novaCopy = plano.copy.map((c) => {
-    const editada = edits.get(c.rede);
-    if (editada && editada !== c.descricao) {
-      redesEditadas.push(c.rede);
-      return { ...c, descricao: editada, hashtags: [] };
-    }
-    return c;
-  });
+  const novaCopy = plano.copy
+    .filter((c) => novasRedes.includes(c.rede)) // tira copy órfã de rede removida
+    .map((c) => {
+      const editada = edits.get(c.rede);
+      if (editada && editada !== c.descricao) {
+        redesEditadas.push(c.rede);
+        return { ...c, descricao: editada, hashtags: [] };
+      }
+      return c;
+    });
 
-  void REDES;
   return {
-    plano: { ...plano, copy: novaCopy },
+    plano: { ...plano, redes: novasRedes, copy: novaCopy },
     redesEditadas,
+    redesFiltradas,
   };
 }

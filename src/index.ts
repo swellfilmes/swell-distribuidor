@@ -383,13 +383,20 @@ async function main() {
 
   log('approval', '✅ aprovado.');
 
-  const { plano: planoFinal, redesEditadas } = await reconciliarPlanoComNotion(
+  const { plano: planoFinal, redesEditadas, redesFiltradas } = await reconciliarPlanoComNotion(
     tenant,
     linha.pageId,
     plano,
   );
   if (redesEditadas.length) {
-    log('approval', `✏️  detectei suas edições no Notion: ${redesEditadas.join(', ')} (uso essas, não a copy original)`);
+    log('approval', `detectei copy editada no Notion: ${redesEditadas.join(', ')} (uso essa, não a original)`);
+  }
+  if (redesFiltradas.length) {
+    log('approval', `redes desmarcadas no Notion: ${redesFiltradas.join(', ')} (pulo essas)`);
+  }
+  if (planoFinal.redes.length === 0) {
+    log('approval', 'todas as redes foram desmarcadas — encerrando sem publicar.');
+    return;
   }
 
   if (decisao.dataPublicacao) {

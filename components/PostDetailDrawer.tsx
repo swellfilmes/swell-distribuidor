@@ -149,6 +149,19 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
             </dl>
           </Section>
 
+          <Section title="Redes onde vai publicar">
+            <RedesEditor
+              redesAtuais={post.redes}
+              pendente={pendente}
+              onSalvar={(novasRedes) =>
+                onSalvar({ redes: novasRedes }, { redes: novasRedes })
+              }
+            />
+            <p className="mt-2 text-[11px] text-fg-muted">
+              Desmarque pra não publicar. O cron respeita essa lista no momento de enviar pro Zernio.
+            </p>
+          </Section>
+
           <Section title="Copy por rede (editável)">
             {post.plano && post.plano.copy.length > 0 ? (
               <div className="space-y-3">
@@ -280,6 +293,55 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       </h3>
       {children}
     </section>
+  );
+}
+
+const REDES_DISPONIVEIS: Array<{ slug: Rede; nome: string }> = [
+  { slug: 'instagram', nome: 'Instagram' },
+  { slug: 'youtube', nome: 'YouTube' },
+  { slug: 'tiktok', nome: 'TikTok' },
+  { slug: 'linkedin', nome: 'LinkedIn' },
+];
+
+function RedesEditor({
+  redesAtuais,
+  pendente,
+  onSalvar,
+}: {
+  redesAtuais: Rede[];
+  pendente: boolean;
+  onSalvar: (novas: Rede[]) => void;
+}) {
+  function toggle(slug: Rede) {
+    if (pendente) return;
+    const setAtual = new Set<Rede>(redesAtuais);
+    if (setAtual.has(slug)) setAtual.delete(slug);
+    else setAtual.add(slug);
+    onSalvar(Array.from(setAtual));
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {REDES_DISPONIVEIS.map((r) => {
+        const ativo = redesAtuais.includes(r.slug);
+        return (
+          <button
+            key={r.slug}
+            onClick={() => toggle(r.slug)}
+            disabled={pendente}
+            className={[
+              'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+              ativo
+                ? 'border-primary/60 bg-primary/15 text-primary'
+                : 'border-bd/40 bg-surface/40 text-fg-muted hover:border-bd/70 hover:text-fg',
+              pendente ? 'cursor-wait opacity-60' : '',
+            ].join(' ')}
+          >
+            {ativo && <span className="mr-1">✓</span>}
+            {r.nome}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

@@ -146,13 +146,20 @@ export async function publicarAprovados(
       chaveR2: '(referência via Notion)',
     };
 
-    const { plano: planoFinal, redesEditadas } = await reconciliarPlanoComNotion(
+    const { plano: planoFinal, redesEditadas, redesFiltradas } = await reconciliarPlanoComNotion(
       tenant,
       linha.pageId,
       linha.plano,
     );
     if (redesEditadas.length) {
-      onLog(`  ✏️  usando suas edições no Notion: ${redesEditadas.join(', ')}`);
+      onLog(`  usando copy editada no Notion: ${redesEditadas.join(', ')}`);
+    }
+    if (redesFiltradas.length) {
+      onLog(`  redes desmarcadas pelo humano no Notion: ${redesFiltradas.join(', ')}`);
+    }
+    if (planoFinal.redes.length === 0) {
+      onLog(`  todas as redes foram desmarcadas — pulando publicação.`);
+      continue;
     }
 
     // Multi-cliente: lookup dinâmico no momento de publicar (não no ingest).
