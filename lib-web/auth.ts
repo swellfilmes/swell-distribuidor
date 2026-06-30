@@ -55,18 +55,32 @@ export async function syncUsuarioAtual(): Promise<UsuarioApp | null> {
   // Upsert do usuário — com retry pra absorver rate-limit do Neon em rajadas.
   // IMPORTANTE: o `set` do conflito NÃO toca `termosAceitos` — quem aceitou
   // continua aceito mesmo que mude nome/role; quem não aceitou continua null.
-  const linhasUpsert = await comRetryDb(() =>
+  // O `returning` foi removido do upsert e virou um SELECT separado com
+  // try/catch pra tolerar DB de produção que ainda não recebeu o `db:push`
+  // que cria a coluna `termos_aceitos`. Sem isso, qualquer requisição
+  // autenticada quebrava com 500.
+  await comRetryDb(() =>
     db
       .insert(users)
       .values({ id: userId, email, nome, role })
       .onConflictDoUpdate({
         target: users.id,
         set: { email, nome, role },
-      })
-      .returning({ termosAceitos: users.termosAceitos }),
+      }),
   );
-  const termosAceitosEm =
-    linhasUpsert[0]?.termosAceitos?.toISOString() ?? null;
+  let termosAceitosEm: string | null = null;
+  try {
+    const rowsTermos = await db
+      .select({ t: users.termosAceitos })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    termosAceitosEm = rowsTermos[0]?.t?.toISOString() ?? null;
+  } catch {
+    // Coluna `termos_aceitos` ainda não existe nesse DB (migration pendente).
+    // Trata como não-aceito — o gate vai aparecer assim que a coluna existir.
+    termosAceitosEm = null;
+  }
 
   // Admin → garante membership na Swell como 'owner'
   if (isAdmin) {
