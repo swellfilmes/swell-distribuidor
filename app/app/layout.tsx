@@ -7,6 +7,12 @@ import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
 import { loadTenantConfig } from '@/src/db/tenantConfig';
 import { temNotionConectado, temZernioConectado } from '@/src/tenant';
 
+// Sem isso, Next 16 podia cachear o layout entre requests e o banner
+// "ainda precisa conectar Zernio" ficava preso mesmo após o testador
+// conectar uma rede (estado novo no banco não era lido).
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function DashboardLayout({
   children,
 }: {
