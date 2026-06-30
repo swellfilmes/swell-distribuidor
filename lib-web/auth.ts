@@ -9,6 +9,12 @@ export interface UsuarioApp {
   email: string;
   nome: string | null;
   role: 'admin' | 'member';
+  /**
+   * Timestamp ISO em que o usuário aceitou os Termos + Política.
+   * `null` enquanto não aceitou — o gate <AceiteTermosGate /> no layout
+   * bloqueia o app até essa coluna ser preenchida.
+   */
+  termosAceitosEm: string | null;
 }
 
 export interface EmpresaResumo {
@@ -47,15 +53,20 @@ export async function syncUsuarioAtual(): Promise<UsuarioApp | null> {
   const role: 'admin' | 'member' = isAdmin ? 'admin' : 'member';
 
   // Upsert do usuário — com retry pra absorver rate-limit do Neon em rajadas.
-  await comRetryDb(() =>
+  // IMPORTANTE: o `set` do conflito NÃO toca `termosAceitos` — quem aceitou
+  // continua aceito mesmo que mude nome/role; quem não aceitou continua null.
+  const linhasUpsert = await comRetryDb(() =>
     db
       .insert(users)
       .values({ id: userId, email, nome, role })
       .onConflictDoUpdate({
         target: users.id,
         set: { email, nome, role },
-      }),
+      })
+      .returning({ termosAceitos: users.termosAceitos }),
   );
+  const termosAceitosEm =
+    linhasUpsert[0]?.termosAceitos?.toISOString() ?? null;
 
   // Admin → garante membership na Swell como 'owner'
   if (isAdmin) {
@@ -93,7 +104,7 @@ export async function syncUsuarioAtual(): Promise<UsuarioApp | null> {
       .where(eq(convites.id, c.id));
   }
 
-  return { id: userId, email, nome, role };
+  return { id: userId, email, nome, role, termosAceitosEm };
 }
 
 /** Lista empresas em que o usuário atual é membro. */

@@ -31,7 +31,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
   return (
     <div className="fixed inset-0 z-40">
       <div
-        className="absolute inset-0 bg-primary/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-app/70 backdrop-blur-sm"
         onClick={onClose}
       />
       <aside className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col overflow-hidden bg-app shadow-xl">
@@ -47,7 +47,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
                 <RedeBadge key={r} rede={r} />
               ))}
               {post.conteudoAI && (
-                <span className="rounded bg-fuchsia-50 px-1.5 py-0.5 text-[10px] font-semibold text-fuchsia-700 ring-1 ring-fuchsia-100">
+                <span className="rounded bg-fuchsia-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-fuchsia-300 ring-1 ring-fuchsia-500/25">
                   AI
                 </span>
               )}
@@ -64,7 +64,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
           </div>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-fg-muted/60 transition-colors hover:bg-primary/5 hover:text-app"
+            className="rounded-md p-1 text-fg-muted/60 transition-colors hover:bg-surface-2 hover:text-fg"
             aria-label="Fechar"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -255,27 +255,27 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
                   onSalvar({ status: 'Aprovado' }, { status: 'Aprovado' })
                 }
                 disabled={pendente || post.status === 'Aprovado'}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-40"
+                className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-app transition-colors hover:bg-primary/85 disabled:opacity-40"
               >
-                ✓ Aprovar
+                Aprovar
               </button>
               <button
                 onClick={() =>
                   onSalvar({ status: 'Rejeitado' }, { status: 'Rejeitado' })
                 }
                 disabled={pendente || post.status === 'Rejeitado'}
-                className="rounded-md bg-rose-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-40"
+                className="rounded-lg border border-error/40 bg-error/10 px-3 py-1.5 text-sm font-medium text-error transition-colors hover:bg-error/20 disabled:opacity-40"
               >
-                ✗ Rejeitar
+                Rejeitar
               </button>
               <button
                 onClick={() =>
                   onSalvar({ status: 'Aguardando' }, { status: 'Aguardando' })
                 }
                 disabled={pendente || post.status === 'Aguardando'}
-                className="rounded-md border border-bd/15 px-3 py-1.5 text-sm font-medium text-fg-muted/80 hover:bg-primary/5 disabled:opacity-40"
+                className="rounded-lg border border-bd/50 px-3 py-1.5 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:opacity-40"
               >
-                ↺ Voltar pra Aguardando
+                Voltar pra Aguardando
               </button>
             </div>
           </Section>
@@ -413,20 +413,20 @@ function CopyRedeEditor({
             onChange={(e) => setValorDesc(e.target.value)}
             disabled={pendente}
             rows={Math.max(3, Math.min(12, valorDesc.split('\n').length + 1))}
-            className="w-full resize-y rounded border border-bd/15 bg-cream/50 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full resize-y rounded border border-bd/15 bg-surface/60 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <input
             value={valorTags}
             onChange={(e) => setValorTags(e.target.value)}
             disabled={pendente}
             placeholder="#hashtag1 #hashtag2"
-            className="mt-1 w-full rounded border border-bd/15 bg-cream/50 p-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="mt-1 w-full rounded border border-bd/15 bg-surface/60 p-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <div className="mt-2 flex justify-end gap-2">
             <button
               onClick={cancelar}
               disabled={pendente}
-              className="rounded-md px-2 py-1 text-xs text-fg-muted/60 hover:bg-primary/5 disabled:opacity-40"
+              className="rounded-md px-2 py-1 text-xs text-fg-muted hover:bg-surface-2 hover:text-fg disabled:opacity-40"
             >
               cancelar
             </button>

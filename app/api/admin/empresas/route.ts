@@ -5,6 +5,7 @@ import {
   listarEmpresasAdmin,
   type CriarEmpresaInput,
 } from '@/lib-web/adminEmpresas';
+import { criarEmpresaBodySchema, lerBody } from '@/lib-web/validators';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,17 +31,14 @@ export async function GET() {
 export async function POST(req: Request) {
   const e = await admin();
   if (e) return e;
-  const body = (await req.json().catch(() => ({}))) as Partial<CriarEmpresaInput>;
-  // A partir de 2.7.A: só nome e slug obrigatórios. Notion/Zernio conectam depois
-  // (OAuth Notion via wizard, Zernio via form). Empresa nasce "pendente" se faltar.
-  const obrigatorios: (keyof CriarEmpresaInput)[] = ['nome', 'slug'];
-  for (const k of obrigatorios) {
-    if (!body[k]) {
-      return NextResponse.json({ error: `Campo "${k}" obrigatório` }, { status: 400 });
-    }
-  }
+  const parsed = await lerBody(req, criarEmpresaBodySchema);
+  if (!parsed.ok) return parsed.resposta;
+  // A partir de 2.7.A: só nome e slug obrigatórios (schema já garante). Notion/Zernio
+  // conectam depois (OAuth Notion via wizard, Zernio via form). Empresa nasce
+  // "pendente" se faltar.
+  const body: CriarEmpresaInput = parsed.data;
   try {
-    const r = await criarEmpresa(body as CriarEmpresaInput);
+    const r = await criarEmpresa(body);
     return NextResponse.json(r);
   } catch (err) {
     return NextResponse.json(

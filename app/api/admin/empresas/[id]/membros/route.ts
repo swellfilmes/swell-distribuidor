@@ -5,16 +5,9 @@ import {
   convidarParaEmpresa,
   removerMembro,
 } from '@/lib-web/adminEmpresas';
+import { empresaMembroBodySchema, lerBody } from '@/lib-web/validators';
 
 export const dynamic = 'force-dynamic';
-
-interface Body {
-  email?: string;
-  role?: 'owner' | 'editor';
-  acao?: 'remover-membro' | 'cancelar-convite';
-  userId?: string;
-  conviteId?: number;
-}
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   let admin;
@@ -32,7 +25,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!Number.isFinite(empresaId))
     return NextResponse.json({ error: 'id inválido' }, { status: 400 });
 
-  const body = (await req.json().catch(() => ({}))) as Body;
+  const parsed = await lerBody(req, empresaMembroBodySchema);
+  if (!parsed.ok) return parsed.resposta;
+  const body = parsed.data;
 
   try {
     if (body.acao === 'remover-membro' && body.userId) {
@@ -43,6 +38,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       await cancelarConvite(empresaId, body.conviteId);
       return NextResponse.json({ ok: true });
     }
+    // O schema garante email presente quando não há `acao` definida.
     if (!body.email)
       return NextResponse.json({ error: 'email obrigatório' }, { status: 400 });
     const role: 'owner' | 'editor' = body.role === 'owner' ? 'owner' : 'editor';

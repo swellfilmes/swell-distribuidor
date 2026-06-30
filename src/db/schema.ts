@@ -32,6 +32,12 @@ export const users = pgTable('users', {
   nome: text('nome'),
   role: text('role').notNull().default('member'),
   criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
+  // Timestamp do aceite dos Termos + Política de Privacidade. Nullable: usuários
+  // antigos (e novos no primeiro login) começam sem aceite, e o AceiteTermosGate
+  // no layout /app/* + /convite/[token] bloqueia o uso até preencher.
+  // Versão dos documentos vigentes é fixa (v1, 2026-06-30); se rebumpar, pode
+  // adicionar outra coluna `termosVersao` e invalidar aceites antigos.
+  termosAceitos: timestamp('termos_aceitos', { withTimezone: true }),
 });
 
 /**

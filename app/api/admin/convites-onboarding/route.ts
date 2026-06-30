@@ -3,8 +3,8 @@ import { exigirAdmin } from '@/lib-web/auth';
 import {
   criarConviteOnboarding,
   listarConvitesOnboarding,
-  type CriarConviteOnboardingInput,
 } from '@/lib-web/convitesOnboarding';
+import { convitarOnboardingBodySchema, lerBody } from '@/lib-web/validators';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +31,9 @@ export async function POST(req: Request) {
       { status: 403 },
     );
   }
-  const body = (await req.json().catch(() => ({}))) as Partial<CriarConviteOnboardingInput>;
+  const parsed = await lerBody(req, convitarOnboardingBodySchema);
+  if (!parsed.ok) return parsed.resposta;
+  const body = parsed.data;
   try {
     const r = await criarConviteOnboarding(admin.id, {
       emailSugerido: body.emailSugerido,

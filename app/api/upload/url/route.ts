@@ -2,19 +2,13 @@ import { NextResponse } from 'next/server';
 import { and, desc, eq, gt, sql } from 'drizzle-orm';
 import { syncUsuarioAtual } from '@/lib-web/auth';
 import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
+import { lerBody, uploadUrlBodySchema } from '@/lib-web/validators';
 import { loadTenantConfig } from '@/src/db/tenantConfig';
 import { gerarUrlAssinadaUpload } from '@/src/storage/r2';
 import { db } from '@/src/db';
 import { jobs } from '@/src/db/schema';
 
 export const dynamic = 'force-dynamic';
-
-interface Body {
-  nomeArquivo?: string;
-  contentType?: string;
-  tamanhoBytes?: number;
-  lastModified?: number;
-}
 
 const DEDUPE_JANELA_HORAS = 1;
 
@@ -32,28 +26,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'sem empresa ativa' }, { status: 400 });
   }
 
-  const body = (await req.json().catch(() => ({}))) as Body;
-  const nome = body.nomeArquivo?.trim();
-  const ct = body.contentType?.trim();
+  const parsed = await lerBody(req, uploadUrlBodySchema);
+  if (!parsed.ok) return parsed.resposta;
+  const body = parsed.data;
+  const nome = body.nomeArquivo;
+  const ct = body.contentType;
   const tamanho = body.tamanhoBytes;
-  if (!nome || !ct) {
-    return NextResponse.json(
-      { error: 'nomeArquivo e contentType são obrigatórios' },
-      { status: 400 },
-    );
-  }
-  if (!ct.startsWith('video/') && !ct.startsWith('image/')) {
-    return NextResponse.json(
-      { error: 'Só vídeo ou imagem (content-type video/* ou image/*).' },
-      { status: 400 },
-    );
-  }
-  if (typeof tamanho !== 'number' || tamanho <= 0) {
-    return NextResponse.json(
-      { error: 'tamanhoBytes é obrigatório.' },
-      { status: 400 },
-    );
-  }
 
   const chaveDedupe = dedupeKey(nome, body.tamanhoBytes, body.lastModified);
 

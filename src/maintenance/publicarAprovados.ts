@@ -4,6 +4,7 @@ import { resolverAccountIdsDoCliente } from '../clientes/resolverCliente';
 import { registrarResultado } from '../log/notion';
 import { reconciliarPlanoComNotion } from '../lib/reconciliarCopy';
 import { chunkRichText } from '../lib/notionChunks';
+import { ehAgendamentoFuturo } from '../publish/agendamento';
 import { notionDbIdDo, type TenantConfig } from '../config';
 import type {
   MidiaHospedada,
@@ -130,8 +131,7 @@ export async function publicarAprovados(
     // Sem data preenchida OU com data no passado = publica agora. Só agenda
     // se data for explicitamente futura.
     const semData = !linha.dataPublicacao;
-    const noPassado =
-      semData || new Date(linha.dataPublicacao).getTime() <= Date.now();
+    const noPassado = !ehAgendamentoFuturo(linha.dataPublicacao);
     onLog(
       `\n→ ${linha.nome} (${
         semData

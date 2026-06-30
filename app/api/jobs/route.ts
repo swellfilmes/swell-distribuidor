@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { syncUsuarioAtual } from '@/lib-web/auth';
 import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
+import { criarJobBodySchema, lerBody } from '@/lib-web/validators';
 import { db } from '@/src/db';
 import { jobs } from '@/src/db/schema';
 import { comRetryDb } from '@/src/db/retry';
@@ -17,25 +18,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'sem empresa ativa' }, { status: 400 });
   }
 
-  const body = (await req.json().catch(() => ({}))) as {
-    tipo?: string;
-    payload?: Record<string, unknown>;
-  };
-  const tipo = body.tipo?.trim();
-  const payload = body.payload;
-  if (!tipo || !payload) {
-    return NextResponse.json(
-      { error: 'tipo e payload são obrigatórios' },
-      { status: 400 },
-    );
-  }
-  // Whitelist: por enquanto só aceito tipo "ingest"
-  if (tipo !== 'ingest') {
-    return NextResponse.json(
-      { error: `tipo "${tipo}" não suportado` },
-      { status: 400 },
-    );
-  }
+  const parsed = await lerBody(req, criarJobBodySchema);
+  if (!parsed.ok) return parsed.resposta;
+  const { tipo, payload } = parsed.data;
 
   try {
     const inserido = await comRetryDb(() =>

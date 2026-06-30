@@ -3,6 +3,7 @@ import { syncUsuarioAtual } from '@/lib-web/auth';
 import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
 import { carregarPost } from '@/lib-web/notionData';
 import { patchPostNoNotion, type PatchPostInput } from '@/lib-web/notionWrite';
+import { lerBody, patchPostInputSchema } from '@/lib-web/validators';
 import { loadTenantConfig } from '@/src/db/tenantConfig';
 
 export const dynamic = 'force-dynamic';
@@ -45,12 +46,9 @@ export async function PATCH(
   if ('erro' in r) return r.erro;
   const { pageId } = await ctx.params;
 
-  let body: PatchPostInput;
-  try {
-    body = (await req.json()) as PatchPostInput;
-  } catch {
-    return NextResponse.json({ error: 'JSON inválido' }, { status: 400 });
-  }
+  const parsed = await lerBody(req, patchPostInputSchema);
+  if (!parsed.ok) return parsed.resposta;
+  const body: PatchPostInput = parsed.data;
 
   try {
     const resultado = await patchPostNoNotion(r.tenant, pageId, body);

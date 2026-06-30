@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
 import { TopBar } from '@/components/TopBar';
 import { OnboardingPendingBanner } from '@/components/OnboardingPendingBanner';
+import { AceiteTermosGate } from '@/components/AceiteTermosGate';
 import { syncUsuarioAtual, listarEmpresasDoUsuario } from '@/lib-web/auth';
 import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
 import { loadTenantConfig } from '@/src/db/tenantConfig';
@@ -53,24 +54,32 @@ export default async function DashboardLayout({
     }
   }
 
+  // Gate de aceite dos Termos/Privacidade. SSR já sabe se o user aceitou
+  // (vem do upsert no banco) — passamos como prop pra evitar piscar a tela
+  // do app antes do client buscar o status. Se ainda não aceitou, o gate
+  // bloqueia em fullscreen e impede qualquer interação com a sidebar/app.
+  const jaAceitouTermos = Boolean(user.termosAceitosEm);
+
   return (
-    <div className="flex min-h-screen bg-app text-fg">
-      <Sidebar isAdmin={user.role === 'admin'} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar
-          empresas={empresas.map((e) => ({ slug: e.slug, nome: e.nome }))}
-          ativaSlug={ativa?.slug ?? null}
-        />
-        {onboardingPendente && (
-          <OnboardingPendingBanner
-            empresaId={onboardingPendente.empresaId}
-            empresaNome={onboardingPendente.empresaNome}
-            notionPronto={onboardingPendente.notionPronto}
-            zernioPronto={onboardingPendente.zernioPronto}
+    <AceiteTermosGate jaAceito={jaAceitouTermos}>
+      <div className="flex min-h-screen bg-app text-fg">
+        <Sidebar isAdmin={user.role === 'admin'} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopBar
+            empresas={empresas.map((e) => ({ slug: e.slug, nome: e.nome }))}
+            ativaSlug={ativa?.slug ?? null}
           />
-        )}
-        <main className="flex-1 px-8 py-8">{children}</main>
+          {onboardingPendente && (
+            <OnboardingPendingBanner
+              empresaId={onboardingPendente.empresaId}
+              empresaNome={onboardingPendente.empresaNome}
+              notionPronto={onboardingPendente.notionPronto}
+              zernioPronto={onboardingPendente.zernioPronto}
+            />
+          )}
+          <main className="flex-1 px-8 py-8">{children}</main>
+        </div>
       </div>
-    </div>
+    </AceiteTermosGate>
   );
 }

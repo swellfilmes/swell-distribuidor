@@ -4,18 +4,18 @@ interface Props {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  Aguardando: 'bg-primary/12 text-fg ring-amber-200',
-  Aprovado: 'bg-blue-100 text-blue-800 ring-blue-200',
-  Rejeitado: 'bg-error/15 text-error ring-rose-200',
-  Agendado: 'bg-violet-100 text-violet-800 ring-violet-200',
-  Publicado: 'bg-success/15 text-success ring-emerald-200',
-  'Publicado parcial': 'bg-orange-100 text-orange-800 ring-orange-200',
-  'Pendente Zernio': 'bg-slate-100 text-slate-700 ring-slate-200',
-  Falhou: 'bg-error/15 text-error ring-red-200',
+  Aguardando: 'bg-amber-500/15 text-amber-300 ring-amber-500/30',
+  Aprovado: 'bg-sky-500/15 text-sky-300 ring-sky-500/30',
+  Rejeitado: 'bg-error/15 text-error ring-error/30',
+  Agendado: 'bg-violet-500/15 text-violet-300 ring-violet-500/30',
+  Publicado: 'bg-success/15 text-success ring-success/30',
+  'Publicado parcial': 'bg-orange-500/15 text-orange-300 ring-orange-500/30',
+  'Pendente Zernio': 'bg-fg-muted/15 text-fg-muted ring-fg-muted/25',
+  Falhou: 'bg-error/15 text-error ring-error/30',
 };
 
 export function StatusBadge({ status, className = '' }: Props) {
-  const cls = STATUS_COLORS[status] ?? 'bg-slate-100 text-slate-700 ring-slate-200';
+  const cls = STATUS_COLORS[status] ?? 'bg-fg-muted/15 text-fg-muted ring-fg-muted/25';
   return (
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${cls} ${className}`}
@@ -33,15 +33,15 @@ const REDE_LABELS: Record<string, string> = {
 };
 
 const REDE_COLORS: Record<string, string> = {
-  youtube: 'bg-error/10 text-error ring-red-100',
-  instagram: 'bg-pink-50 text-pink-700 ring-pink-100',
-  tiktok: 'bg-slate-100 text-slate-800 ring-slate-200',
-  linkedin: 'bg-sky-50 text-sky-700 ring-sky-100',
+  youtube: 'bg-red-500/15 text-red-300 ring-red-500/25',
+  instagram: 'bg-pink-500/15 text-pink-300 ring-pink-500/25',
+  tiktok: 'bg-fg-muted/15 text-fg ring-fg-muted/25',
+  linkedin: 'bg-sky-500/15 text-sky-300 ring-sky-500/25',
 };
 
 export function RedeBadge({ rede }: { rede: string }) {
   const label = REDE_LABELS[rede] ?? rede.slice(0, 2).toUpperCase();
-  const cls = REDE_COLORS[rede] ?? 'bg-slate-100 text-slate-700 ring-slate-200';
+  const cls = REDE_COLORS[rede] ?? 'bg-fg-muted/15 text-fg-muted ring-fg-muted/25';
   return (
     <span
       title={rede}

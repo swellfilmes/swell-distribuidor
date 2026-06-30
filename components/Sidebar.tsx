@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -32,53 +32,100 @@ interface Props {
 export function Sidebar({ isAdmin = false }: Props) {
   const pathname = usePathname();
   const todosItens: ItemNav[] = isAdmin ? [...itens, itemAdmin] : itens;
+  const [aberto, setAberto] = useState(false);
+
+  // Fecha o drawer ao mudar de rota (clicar num link).
+  useEffect(() => {
+    setAberto(false);
+  }, [pathname]);
+
+  // ESC fecha o drawer mobile.
+  useEffect(() => {
+    if (!aberto) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAberto(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [aberto]);
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-bd/40 bg-surface/40 md:flex">
-      <div className="flex h-14 items-center gap-2 border-b border-bd/40 px-5">
-        <Logo />
-        <span className="font-serif text-base leading-none text-fg">
-          Swell <span className="text-primary">Mermaid</span>
-        </span>
-      </div>
+    <>
+      {/* Hamburger mobile: fixed top-left, acima de tudo. md:hidden = some no desktop. */}
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
+        aria-label={aberto ? 'Fechar menu' : 'Abrir menu'}
+        aria-expanded={aberto}
+        className="fixed left-3 top-2.5 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-bd/50 bg-surface/90 text-fg backdrop-blur-md transition-colors hover:bg-surface-2 md:hidden"
+      >
+        {aberto ? <IconClose className="h-4 w-4" /> : <IconMenu className="h-4 w-4" />}
+      </button>
 
-      <nav className="flex-1 space-y-0.5 px-3 py-4">
-        {todosItens.map((item) => {
-          const ativo = item.match.test(pathname);
-          const { Icon } = item;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={[
-                'group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
-                ativo
-                  ? 'bg-surface-2 text-fg'
-                  : 'text-fg-muted hover:bg-surface-2/60 hover:text-fg',
-              ].join(' ')}
-            >
-              <Icon
-                className={[
-                  'h-4 w-4 shrink-0',
-                  ativo ? 'text-primary' : 'text-fg-muted group-hover:text-fg',
-                ].join(' ')}
-              />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      {/* Overlay mobile quando aberto. */}
+      {aberto && (
+        <button
+          type="button"
+          aria-label="Fechar menu"
+          onClick={() => setAberto(false)}
+          className="fixed inset-0 z-30 bg-app/70 backdrop-blur-sm md:hidden"
+        />
+      )}
 
-      <div className="border-t border-bd/40 px-5 py-3 text-[11px] text-fg-muted/70">
-        <div className="flex items-center justify-between">
-          <span>v2.7</span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-medium text-success">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
-            online
+      {/* Sidebar: desktop sempre, mobile drawer. */}
+      <aside
+        className={[
+          'flex w-60 shrink-0 flex-col border-r border-bd/40 bg-surface/95 backdrop-blur-md',
+          // Mobile: fixed drawer com transição. Desktop: estático.
+          'fixed inset-y-0 left-0 z-40 transition-transform md:relative md:translate-x-0 md:bg-surface/40 md:backdrop-blur-none',
+          aberto ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        ].join(' ')}
+      >
+        <div className="flex h-14 items-center gap-2 border-b border-bd/40 px-5 pl-14 md:pl-5">
+          <Logo />
+          <span className="font-serif text-base leading-none text-fg">
+            Swell <span className="text-primary">Mermaid</span>
           </span>
         </div>
-      </div>
-    </aside>
+
+        <nav className="flex-1 space-y-0.5 px-3 py-4">
+          {todosItens.map((item) => {
+            const ativo = item.match.test(pathname);
+            const { Icon } = item;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={[
+                  'group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
+                  ativo
+                    ? 'bg-surface-2 text-fg'
+                    : 'text-fg-muted hover:bg-surface-2/60 hover:text-fg',
+                ].join(' ')}
+              >
+                <Icon
+                  className={[
+                    'h-4 w-4 shrink-0',
+                    ativo ? 'text-primary' : 'text-fg-muted group-hover:text-fg',
+                  ].join(' ')}
+                />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-bd/40 px-5 py-3 text-[11px] text-fg-muted/70">
+          <div className="flex items-center justify-between">
+            <span>v2.7</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-medium text-success">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
+              online
+            </span>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -114,6 +161,25 @@ function svgBase(className?: string) {
     strokeLinejoin: 'round' as const,
     className,
   };
+}
+
+function IconMenu({ className }: { className?: string }) {
+  return (
+    <svg {...svgBase(className)}>
+      <path d="M3 6h18" />
+      <path d="M3 12h18" />
+      <path d="M3 18h18" />
+    </svg>
+  );
+}
+
+function IconClose({ className }: { className?: string }) {
+  return (
+    <svg {...svgBase(className)}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
 }
 
 function IconDashboard({ className }: { className?: string }) {

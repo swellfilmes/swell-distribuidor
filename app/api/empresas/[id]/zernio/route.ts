@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { syncUsuarioAtual, listarEmpresasDoUsuario } from '@/lib-web/auth';
+import { atualizarZernioBodySchema, lerBody } from '@/lib-web/validators';
 import { db } from '@/src/db';
 import { empresas, tenantSecrets } from '@/src/db/schema';
 import { cifrar } from '@/src/db/encryption';
@@ -8,14 +9,6 @@ import { invalidarCache } from '@/src/db/tenantConfig';
 import { comRetryDb } from '@/src/db/retry';
 
 export const dynamic = 'force-dynamic';
-
-interface Body {
-  zernioApiKey?: string;
-  zernioYoutubeAccountId?: string;
-  zernioInstagramAccountId?: string;
-  zernioTiktokAccountId?: string;
-  zernioLinkedinAccountId?: string;
-}
 
 /**
  * POST /api/empresas/[id]/zernio — owner OU editor da empresa atualiza as
@@ -46,7 +39,9 @@ export async function POST(
     );
   }
 
-  const body = (await req.json().catch(() => ({}))) as Body;
+  const parsed = await lerBody(req, atualizarZernioBodySchema);
+  if (!parsed.ok) return parsed.resposta;
+  const body = parsed.data;
 
   const set: Record<string, unknown> = { atualizadoEm: new Date() };
   if (body.zernioApiKey) set.zernioApiKeyEncrypted = cifrar(body.zernioApiKey);

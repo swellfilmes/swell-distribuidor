@@ -1,7 +1,11 @@
 import { auth } from '@clerk/nextjs/server';
 import Link from 'next/link';
+import { eq } from 'drizzle-orm';
 import { validarConviteOnboarding } from '@/lib-web/convitesOnboarding';
 import { ConviteOnboardingUI } from '@/components/ConviteOnboardingUI';
+import { AceiteTermosGate } from '@/components/AceiteTermosGate';
+import { db } from '@/src/db/index';
+import { users } from '@/src/db/schema';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +19,26 @@ export default async function PaginaConvite({ params }: Props) {
   const { userId } = await auth();
   const jaLogado = Boolean(userId);
 
-  return (
+  // Se o usuário já está logado, conferimos se aceitou Termos/Privacidade.
+  // Pra usuário não-logado, o gate vai aparecer DEPOIS no /app (layout).
+  // Aqui é defensivo: se ele veio do signup e ainda não sincronizou, deixa
+  // undefined e o gate faz fetch sozinho.
+  let jaAceitouTermos: boolean | undefined = undefined;
+  if (userId) {
+    try {
+      const linha = await db
+        .select({ termosAceitos: users.termosAceitos })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      jaAceitouTermos = Boolean(linha[0]?.termosAceitos);
+    } catch {
+      // Falha de banco → deixa o client decidir. Não bloqueia render.
+      jaAceitouTermos = undefined;
+    }
+  }
+
+  const conteudo = (
     <div className="relative min-h-dvh bg-app px-4 py-12 sm:py-20">
       {/* Glow ambiente discreto */}
       <div
@@ -83,5 +106,13 @@ export default async function PaginaConvite({ params }: Props) {
         )}
       </div>
     </div>
+  );
+
+  // Usuário não-logado: pula gate (vai aceitar depois, no /app ou após
+  // entrar de novo). Usuário logado mas sem aceite: bloqueia aqui também
+  // pra evitar que ele complete a criação da empresa sem ter aceito.
+  if (!jaLogado) return conteudo;
+  return (
+    <AceiteTermosGate jaAceito={jaAceitouTermos}>{conteudo}</AceiteTermosGate>
   );
 }

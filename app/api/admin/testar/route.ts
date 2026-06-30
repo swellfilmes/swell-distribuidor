@@ -2,14 +2,9 @@ import { NextResponse } from 'next/server';
 import { Client as NotionClient } from '@notionhq/client';
 import { Zernio } from '@zernio/node';
 import { exigirAdmin } from '@/lib-web/auth';
+import { lerBody, testarCredenciaisBodySchema } from '@/lib-web/validators';
 
 export const dynamic = 'force-dynamic';
-
-interface Body {
-  notionApiKey?: string;
-  notionDbId?: string;
-  zernioApiKey?: string;
-}
 
 export async function POST(req: Request) {
   try {
@@ -19,7 +14,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 403 });
   }
 
-  const body = (await req.json().catch(() => ({}))) as Body;
+  const parsed = await lerBody(req, testarCredenciaisBodySchema);
+  if (!parsed.ok) return parsed.resposta;
+  const body = parsed.data;
 
   // --- Notion ---
   let notion:

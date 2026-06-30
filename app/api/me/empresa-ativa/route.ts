@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { listarEmpresasDoUsuario, syncUsuarioAtual } from '@/lib-web/auth';
 import { EMPRESA_COOKIE } from '@/lib-web/empresaAtiva';
+import { lerBody, meEmpresaAtivaBodySchema } from '@/lib-web/validators';
 
 export async function POST(req: Request) {
   const user = await syncUsuarioAtual();
@@ -9,11 +10,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'não autenticado' }, { status: 401 });
   }
 
-  const body = (await req.json().catch(() => ({}))) as { slug?: string };
-  const slug = body.slug?.trim();
-  if (!slug) {
-    return NextResponse.json({ error: 'slug ausente' }, { status: 400 });
-  }
+  const parsed = await lerBody(req, meEmpresaAtivaBodySchema);
+  if (!parsed.ok) return parsed.resposta;
+  const { slug } = parsed.data;
 
   const minhas = await listarEmpresasDoUsuario();
   const achou = minhas.find((m) => m.slug === slug);

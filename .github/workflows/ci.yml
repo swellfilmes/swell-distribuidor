@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: typecheck + build + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Envs falsas só pra o `next build` não morrer no zod safeParse de
+    # `src/config.ts`. Nada disso vaza pra produção — Vercel/Railway usam
+    # seus próprios secrets em runtime.
+    env:
+      ANTHROPIC_API_KEY: ci-fake-key
+      R2_ACCOUNT_ID: ci-fake-account
+      R2_ACCESS_KEY_ID: ci-fake-access-key
+      R2_SECRET_ACCESS_KEY: ci-fake-secret-key
+      R2_BUCKET: ci-fake-bucket
+      R2_PUBLIC_BASE_URL: https://example.com
+      DATABASE_URL: postgres://user:pass@localhost:5432/ci
+      ENCRYPTION_KEY: ci-fake-encryption-key-32-bytes-ok
+      NEXT_TELEMETRY_DISABLED: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test (vitest)
+        run: npm test

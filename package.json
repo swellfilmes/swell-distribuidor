@@ -11,6 +11,8 @@
     "distribuir": "tsx src/index.ts",
     "worker": "tsx worker/index.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:push": "drizzle-kit push --force",
     "db:migrate-swell": "tsx scripts/migrate-swell-tenant.ts",
     "r2:setup-cors": "tsx scripts/setup-r2-cors.ts"
@@ -23,6 +25,7 @@
     "@clerk/themes": "^2.4.57",
     "@neondatabase/serverless": "^1.1.0",
     "@notionhq/client": "^2.2.15",
+    "@sentry/nextjs": "^10.62.0",
     "@zernio/node": "^0.2.247",
     "croner": "^10.0.1",
     "dotenv": "^16.4.5",
@@ -38,12 +41,14 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^2.1.8",
     "autoprefixer": "^10.5.0",
     "drizzle-kit": "^0.31.10",
     "postcss": "^8.5.15",
     "tailwindcss": "^3.4.19",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.8"
   },
   "engines": {
     "node": ">=20"

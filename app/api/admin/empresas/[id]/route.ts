@@ -5,6 +5,7 @@ import {
   carregarEmpresaDetalhada,
   type AtualizarEmpresaInput,
 } from '@/lib-web/adminEmpresas';
+import { atualizarEmpresaBodySchema, lerBody } from '@/lib-web/validators';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (e) return e;
   const id = await parseId(ctx);
   if (id === null) return NextResponse.json({ error: 'id inválido' }, { status: 400 });
-  const body = (await req.json().catch(() => ({}))) as AtualizarEmpresaInput;
+  const parsed = await lerBody(req, atualizarEmpresaBodySchema);
+  if (!parsed.ok) return parsed.resposta;
+  const body: AtualizarEmpresaInput = parsed.data;
   try {
     await atualizarEmpresa(id, body);
     return NextResponse.json({ ok: true });

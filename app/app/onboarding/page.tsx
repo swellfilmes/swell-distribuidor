@@ -52,7 +52,7 @@ export default async function OnboardingPage({ searchParams }: Props) {
   const zernioPronto = Boolean(detalhe.zernioApiKey);
 
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-white to-amber-50/40 px-4 py-6 sm:py-12">
+    <div className="min-h-dvh bg-gradient-to-b from-app via-app to-surface px-4 py-6 sm:py-12">
       <div className="mx-auto w-full max-w-2xl">
         <OnboardingWizard
           empresaId={detalhe.id}

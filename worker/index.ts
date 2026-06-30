@@ -16,6 +16,9 @@ import { processarIngest, type PayloadIngest } from './handlers/ingest';
 import { publicarAprovadosTodas } from './crons/publicarAprovadosTodas';
 import { sincronizarEditsTodas } from './crons/sincronizarEditsTodas';
 import { atualizarPendentesTodas } from './crons/atualizarPendentesTodas';
+import { initSentryWorker, captureException } from './lib/sentry';
+
+initSentryWorker();
 
 const INTERVALO_POLL_MS = 5_000;
 const MAX_CONCURRENCY = 1;
@@ -169,6 +172,7 @@ function registrarCrons() {
       await publicarAprovadosTodas();
     } catch (err) {
       console.error('[cron publicar-aprovados] crash:', err);
+      captureException(err, { cron: 'publicar-aprovados' });
     }
   });
 
@@ -178,6 +182,7 @@ function registrarCrons() {
       await sincronizarEditsTodas();
     } catch (err) {
       console.error('[cron sincronizar-edits] crash:', err);
+      captureException(err, { cron: 'sincronizar-edits' });
     }
   });
 
@@ -187,6 +192,7 @@ function registrarCrons() {
       await atualizarPendentesTodas();
     } catch (err) {
       console.error('[cron atualizar-pendentes] crash:', err);
+      captureException(err, { cron: 'atualizar-pendentes' });
     }
   });
 
@@ -212,5 +218,6 @@ async function main() {
 main().catch((err) => {
   console.error('\n💥 Worker morreu de vez:');
   console.error(err);
+  captureException(err, { fatal: true });
   process.exit(1);
 });
