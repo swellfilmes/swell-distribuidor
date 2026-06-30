@@ -140,6 +140,12 @@ export interface OpcoesPublicar {
   scheduledFor?: string;
   /** Default: America/Bahia. Usado quando scheduledFor está definido. */
   timezone?: string;
+  /**
+   * Override de accountIds por rede — usado quando o cliente do post (ex: Austral)
+   * tem accountIds próprios no banco de clientes Notion. Cada chave sobrescreve
+   * o accountId default do tenant (env / tenant_secrets).
+   */
+  accountIdsOverride?: Partial<Record<Rede, string>>;
   onTick?: (msg: string) => void;
 }
 
@@ -162,7 +168,12 @@ export async function publicarTudo(
   }> = [];
 
   for (const rede of plano.redes) {
-    const accountId = contaConfiguradaPara(tenant, rede);
+    // Override do cliente (multi-cliente via Profiles) tem precedência sobre o
+    // accountId default do tenant. Se o cliente passar string vazia explícita
+    // (rede desconectada), respeita o vazio e pula a rede.
+    const override = opts.accountIdsOverride?.[rede];
+    const accountId =
+      override !== undefined ? (override || undefined) : contaConfiguradaPara(tenant, rede);
     if (!accountId) {
       redesIgnoradas.push(rede);
       continue;

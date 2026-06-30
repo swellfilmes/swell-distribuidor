@@ -1,5 +1,6 @@
 import { notionDo } from '../lib/clients';
 import { publicarTudo } from '../publish/zernio';
+import { resolverAccountIdsDoCliente } from '../clientes/resolverCliente';
 import { registrarResultado } from '../log/notion';
 import { reconciliarPlanoComNotion } from '../lib/reconciliarCopy';
 import { chunkRichText } from '../lib/notionChunks';
@@ -142,12 +143,20 @@ export async function publicarAprovados(
       onLog(`  ✏️  usando suas edições no Notion: ${redesEditadas.join(', ')}`);
     }
 
+    // Multi-cliente: lookup dinâmico no momento de publicar (não no ingest).
+    const accountIdsOverride = await resolverAccountIdsDoCliente(
+      tenant,
+      planoFinal.meta.cliente,
+      (msg) => onLog(`  [cliente] ${msg}`),
+    );
+
     const { resultados, redesIgnoradas, zernioPostId } = await publicarTudo(
       tenant,
       planoFinal,
       midia,
       {
         scheduledFor: noPassado ? undefined : linha.dataPublicacao,
+        accountIdsOverride,
         onTick: (msg) => onLog(`  ${msg}`),
       },
     );

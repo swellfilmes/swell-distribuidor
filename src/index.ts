@@ -28,6 +28,7 @@ import { gerarThumbnailsPeriodo } from './maintenance/gerarThumbnailsPeriodo';
 import { cancelarAgendamento } from './maintenance/cancelarAgendamento';
 import { executarNovoCliente } from './clientes/novoCliente';
 import { executarVerificarCliente } from './clientes/verificarCliente';
+import { resolverAccountIdsDoCliente } from './clientes/resolverCliente';
 import type { Rede } from './types';
 import { loadTenantConfig, listarEmpresasAtivas } from './db/tenantConfig';
 import type { TenantConfig } from './config';
@@ -397,12 +398,22 @@ async function main() {
     log('publish', 'publicando via Zernio agora (sem DataPublicacao definida)...');
   }
 
+  // Multi-cliente: se o tenant tem banco de clientes, tenta resolver accountIds
+  // específicos do cliente do post. Cliente vem do meta.cliente do parseNome
+  // (ou da inferência). Fallback transparente pro perfil default se não rolar.
+  const accountIdsOverride = await resolverAccountIdsDoCliente(
+    tenant,
+    planoFinal.meta.cliente,
+    (msg) => log('cliente', msg),
+  );
+
   const { resultados, redesIgnoradas, zernioPostId } = await publicarTudo(
     tenant,
     planoFinal,
     midia,
     {
       scheduledFor: decisao.dataPublicacao,
+      accountIdsOverride,
       onTick: (msg) => log('publish', msg),
     },
   );
