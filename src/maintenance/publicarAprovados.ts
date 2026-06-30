@@ -55,13 +55,15 @@ async function buscarLinhasAprovadasComData(
   let cursor: string | undefined;
 
   do {
+    // Aprovado sem DataPublicacao = publica AGORA. Aprovado com DataPublicacao
+    // futura = agenda no Zernio. Sem essa flexibilidade, testador aprovava e
+    // a linha ficava travada porque não preencheu o campo de data.
     const resp = await notion.databases.query({
       database_id: notionDbIdDo(tenant),
       start_cursor: cursor,
       filter: {
         and: [
           { property: 'Status', select: { equals: 'Aprovado' } },
-          { property: 'DataPublicacao', date: { is_not_empty: true } },
           { property: 'ZernioPostId', rich_text: { is_empty: true } },
         ],
       },
@@ -74,7 +76,7 @@ async function buscarLinhasAprovadasComData(
       const planoJsonStr = lerRichText(props['PlanoJSON']);
       if (!planoJsonStr) {
         console.warn(
-          `⚠️  página ${page.id} sem PlanoJSON; pulando (provavelmente é antes do upgrade).`,
+          `página ${page.id} sem PlanoJSON; pulando (provavelmente é antes do upgrade).`,
         );
         continue;
       }
@@ -83,7 +85,7 @@ async function buscarLinhasAprovadasComData(
       try {
         plano = JSON.parse(planoJsonStr) as PlanoPublicacao;
       } catch {
-        console.warn(`⚠️  página ${page.id} com PlanoJSON inválido; pulando.`);
+        console.warn(`página ${page.id} com PlanoJSON inválido; pulando.`);
         continue;
       }
 
@@ -91,19 +93,19 @@ async function buscarLinhasAprovadasComData(
       const dataPublicacao = lerDateStart(props['DataPublicacao']);
       const nome = lerTitle(props['Nome']) || '(sem nome)';
 
-      if (!videoUrl || !dataPublicacao) {
-        console.warn(
-          `⚠️  página ${page.id} sem Video ou DataPublicacao; pulando.`,
-        );
+      if (!videoUrl) {
+        console.warn(`página ${page.id} sem Video; pulando.`);
         continue;
       }
 
+      // Sem DataPublicacao = string vazia → publicarAprovados detecta como
+      // "no passado" e dispara publishNow no Zernio.
       linhas.push({
         pageId: page.id,
         nome,
         plano,
         videoUrl,
-        dataPublicacao,
+        dataPublicacao: dataPublicacao || '',
       });
     }
 
@@ -118,16 +120,26 @@ export async function publicarAprovados(
   onLog: (msg: string) => void = (m) => console.log(m),
 ): Promise<void> {
   const notion = notionDo(tenant);
-  onLog('Buscando linhas Aprovadas com DataPublicacao no Notion...');
+  onLog('Buscando linhas Aprovadas no Notion...');
   const linhas = await buscarLinhasAprovadasComData(tenant);
-  onLog(`Encontradas ${linhas.length} linha(s) prontas pra agendar.`);
+  onLog(`Encontradas ${linhas.length} linha(s) prontas pra publicar.`);
 
   if (linhas.length === 0) return;
 
   for (const linha of linhas) {
-    const noPassado = new Date(linha.dataPublicacao).getTime() <= Date.now();
+    // Sem data preenchida OU com data no passado = publica agora. Só agenda
+    // se data for explicitamente futura.
+    const semData = !linha.dataPublicacao;
+    const noPassado =
+      semData || new Date(linha.dataPublicacao).getTime() <= Date.now();
     onLog(
-      `\n→ ${linha.nome} (${noPassado ? 'data já passou, publicar agora' : `agendar para ${linha.dataPublicacao}`})`,
+      `\n→ ${linha.nome} (${
+        semData
+          ? 'sem data definida → publicar agora'
+          : noPassado
+            ? 'data já passou → publicar agora'
+            : `agendar para ${linha.dataPublicacao}`
+      })`,
     );
     const midia: MidiaHospedada = {
       urlPublica: linha.videoUrl,
