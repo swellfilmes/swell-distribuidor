@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { globalConfig } from '../config';
+import { comTimeoutERetry } from '../lib/resiliencia';
 import type { Rede } from '../types';
 
 const client = new Anthropic({ apiKey: globalConfig.ANTHROPIC_API_KEY });
@@ -92,12 +93,16 @@ export async function gerarCronograma(itens: ItemPraAgendar[]): Promise<Agendame
 
   const sysPrompt = SYSTEM_PROMPT.replace('{{HOJE}}', hoje);
 
-  const resposta = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 16384,
-    system: sysPrompt,
-    messages: [{ role: 'user', content: userMessage }],
-  });
+  const resposta = await comTimeoutERetry(
+    () =>
+      client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 16384,
+        system: sysPrompt,
+        messages: [{ role: 'user', content: userMessage }],
+      }),
+    { nome: 'Anthropic.agendador', timeoutMs: 120_000 },
+  );
 
   const blocoTexto = resposta.content.find((b) => b.type === 'text');
   if (!blocoTexto || blocoTexto.type !== 'text') {

@@ -35,6 +35,7 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as Body;
   const nome = body.nomeArquivo?.trim();
   const ct = body.contentType?.trim();
+  const tamanho = body.tamanhoBytes;
   if (!nome || !ct) {
     return NextResponse.json(
       { error: 'nomeArquivo e contentType são obrigatórios' },
@@ -44,6 +45,12 @@ export async function POST(req: Request) {
   if (!ct.startsWith('video/') && !ct.startsWith('image/')) {
     return NextResponse.json(
       { error: 'Só vídeo ou imagem (content-type video/* ou image/*).' },
+      { status: 400 },
+    );
+  }
+  if (typeof tamanho !== 'number' || tamanho <= 0) {
+    return NextResponse.json(
+      { error: 'tamanhoBytes é obrigatório.' },
       { status: 400 },
     );
   }
@@ -92,7 +99,7 @@ export async function POST(req: Request) {
 
   try {
     const tenant = await loadTenantConfig(empresa.slug);
-    const r = await gerarUrlAssinadaUpload(tenant, nome, ct);
+    const r = await gerarUrlAssinadaUpload(tenant, nome, ct, tamanho);
     return NextResponse.json({ ...r, dedupeKey: chaveDedupe });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

@@ -29,7 +29,7 @@ async function detectarOrientacao(input: string): Promise<Orientacao> {
       '-show_entries', 'stream=width,height',
       '-of', 'csv=p=0',
       input,
-    ]);
+    ], { timeout: 30_000 });
     const [wStr, hStr] = stdout.trim().split(',');
     const w = parseInt(wStr, 10);
     const h = parseInt(hStr, 10);

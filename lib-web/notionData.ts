@@ -274,6 +274,31 @@ function materializarPost(page: {
   };
 }
 
+function pertenceAoTenant(page: unknown, dbIdEsperado: string): boolean {
+  if (!page || typeof page !== 'object') return false;
+  const parent = (page as { parent?: { type?: string; database_id?: string } }).parent;
+  if (!parent || parent.type !== 'database_id' || !parent.database_id) return false;
+  // Notion devolve UUID com hífens; nosso DB pode estar gravado sem.
+  const norm = (s: string) => s.replace(/-/g, '').toLowerCase();
+  return norm(parent.database_id) === norm(dbIdEsperado);
+}
+
+/**
+ * Garante que a página pertence ao DB Notion do tenant. Sem isso, se o bot
+ * Notion tiver acesso a 2 workspaces, um tenant poderia ler/escrever página
+ * de outro só passando o pageId. IDOR clássico.
+ */
+export async function assertPagePertenceAoTenant(
+  tenant: TenantConfig,
+  pageId: string,
+): Promise<void> {
+  const notion = notionDo(tenant);
+  const page = await notion.pages.retrieve({ page_id: pageId });
+  if (!pertenceAoTenant(page, notionDbIdDo(tenant))) {
+    throw new Error('Página não pertence ao tenant.');
+  }
+}
+
 /** Carrega um post único por pageId (pro side panel detalhado). */
 export async function carregarPost(
   tenant: TenantConfig,
@@ -283,6 +308,7 @@ export async function carregarPost(
   try {
     const page = await notion.pages.retrieve({ page_id: pageId });
     if (!('properties' in page)) return null;
+    if (!pertenceAoTenant(page, notionDbIdDo(tenant))) return null;
     return materializarPost(page as never);
   } catch {
     return null;

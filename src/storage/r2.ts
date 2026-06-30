@@ -48,14 +48,36 @@ export async function subirParaR2(
 }
 
 /**
+ * Cap server-side de 5 GB no upload. O cliente precisa enviar `tamanhoBytes`
+ * pra gente assinar com ContentLength exato — qualquer corpo diferente
+ * disso o R2 rejeita por causa da assinatura. Sem isso, presigned PUT
+ * aceitava arquivos de qualquer tamanho.
+ */
+export const LIMITE_UPLOAD_BYTES = 5 * 1024 * 1024 * 1024;
+
+/**
  * Gera uma URL assinada PUT pra o browser subir direto no R2.
- * TTL curto (10 min) é suficiente porque o usuário inicia o upload imediato.
+ *
+ * `tamanhoBytes` precisa vir do cliente — a assinatura inclui `Content-Length`
+ * exato, então o browser não consegue subir nada maior (nem menor) sem
+ * invalidar a assinatura. Cap configurado em LIMITE_UPLOAD_BYTES.
  */
 export async function gerarUrlAssinadaUpload(
   tenant: TenantConfig,
   nomeArquivo: string,
   contentType: string,
+  tamanhoBytes: number,
 ): Promise<{ url: string; chaveR2: string; urlPublica: string }> {
+  if (!Number.isFinite(tamanhoBytes) || tamanhoBytes <= 0) {
+    throw new Error('tamanhoBytes precisa ser um número positivo.');
+  }
+  if (tamanhoBytes > LIMITE_UPLOAD_BYTES) {
+    const gb = (tamanhoBytes / 1024 / 1024 / 1024).toFixed(2);
+    throw new Error(
+      `Arquivo de ${gb} GB passa do limite de ${LIMITE_UPLOAD_BYTES / 1024 / 1024 / 1024} GB.`,
+    );
+  }
+
   const sanitize = nomeArquivo.replace(/[^\w.\-]/g, '_');
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const chaveR2 = `tenants/${tenant.empresaId}/publicar/${timestamp}__${sanitize}`;
@@ -64,6 +86,7 @@ export async function gerarUrlAssinadaUpload(
     Bucket: globalConfig.R2_BUCKET,
     Key: chaveR2,
     ContentType: contentType,
+    ContentLength: tamanhoBytes,
   });
 
   // TTL 1h: vídeos grandes (até 5GB) em conexão residencial podem levar

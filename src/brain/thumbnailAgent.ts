@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { globalConfig } from '../config';
+import { comTimeoutERetry } from '../lib/resiliencia';
 import type { FrameExtraido } from '../ingest/extrairFrames';
 import type { PlanoPublicacao } from '../types';
 
@@ -89,12 +90,16 @@ export async function avaliarFramesParaThumbnail(
     });
   }
 
-  const resposta = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userContent }],
-  });
+  const resposta = await comTimeoutERetry(
+    () =>
+      client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2048,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userContent }],
+      }),
+    { nome: 'Anthropic.thumbnailAgent', timeoutMs: 60_000 },
+  );
 
   const blocoTexto = resposta.content.find((b) => b.type === 'text');
   if (!blocoTexto || blocoTexto.type !== 'text') {

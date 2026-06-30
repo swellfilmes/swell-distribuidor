@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { globalConfig } from '../config';
+import { comTimeoutERetry } from '../lib/resiliencia';
 import { TOM_DE_VOZ_SWELL } from './tomSwell';
 import type { FrameExtraido } from '../ingest/extrairFrames';
 import type { CopyPorRede, PlanoPublicacao, Rede } from '../types';
@@ -80,12 +81,16 @@ export async function polirCopy(
     });
   }
 
-  const resposta = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userContent }],
-  });
+  const resposta = await comTimeoutERetry(
+    () =>
+      client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2048,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userContent }],
+      }),
+    { nome: 'Anthropic.redator', timeoutMs: 60_000 },
+  );
 
   const blocoTexto = resposta.content.find((b) => b.type === 'text');
   if (!blocoTexto || blocoTexto.type !== 'text') {

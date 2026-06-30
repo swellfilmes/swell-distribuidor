@@ -1,5 +1,6 @@
 import { contaConfiguradaPara, garantirZernioInicializado, zernioDo } from '../lib/clients';
 import type { TenantConfig } from '../config';
+import { comTimeoutERetry } from '../lib/resiliencia';
 import {
   categoriaDoTipo,
   type CopyPorRede,
@@ -63,7 +64,10 @@ async function aguardarPublicacaoFinal(
 
   while (Date.now() - inicio < POLL_TIMEOUT_MS) {
     tentativa++;
-    const resposta = await zernio.posts.getPost({ path: { postId } });
+    const resposta = await comTimeoutERetry(
+      () => zernio.posts.getPost({ path: { postId } }),
+      { nome: 'Zernio.getPost', timeoutMs: 20_000, tentativas: 2 },
+    );
     const data = (
       resposta as {
         data?: {
@@ -252,9 +256,10 @@ export async function publicarTudo(
       body.publishNow = true;
     }
 
-    const resposta = await zernio.posts.createPost({
-      body: body as never,
-    });
+    const resposta = await comTimeoutERetry(
+      () => zernio.posts.createPost({ body: body as never }),
+      { nome: 'Zernio.createPost', timeoutMs: 60_000 },
+    );
 
     const dataCreate = (resposta as { data?: { post?: { _id?: string } } }).data;
     const erroCreate = (resposta as { error?: { message?: string } }).error;

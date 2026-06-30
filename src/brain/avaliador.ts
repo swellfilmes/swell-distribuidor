@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { globalConfig } from '../config';
+import { comTimeoutERetry } from '../lib/resiliencia';
 import { TOM_DE_VOZ_SWELL } from './tomSwell';
 import type { CopyPorRede, PlanoPublicacao, Rede } from '../types';
 
@@ -97,12 +98,16 @@ export async function avaliarECorrigir(
     `Copy pra avaliar:\n${copyResumo}\n\n` +
     `Pontue cada uma, reescreva as fracas pra 10. JSON conforme instruído.`;
 
-  const resposta = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 3072,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userMessage }],
-  });
+  const resposta = await comTimeoutERetry(
+    () =>
+      client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 3072,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userMessage }],
+      }),
+    { nome: 'Anthropic.avaliador', timeoutMs: 60_000 },
+  );
 
   const blocoTexto = resposta.content.find((b) => b.type === 'text');
   if (!blocoTexto || blocoTexto.type !== 'text') {

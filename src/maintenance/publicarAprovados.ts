@@ -169,16 +169,43 @@ export async function publicarAprovados(
       (msg) => onLog(`  [cliente] ${msg}`),
     );
 
-    const { resultados, redesIgnoradas, zernioPostId } = await publicarTudo(
-      tenant,
-      planoFinal,
-      midia,
-      {
-        scheduledFor: noPassado ? undefined : linha.dataPublicacao,
-        accountIdsOverride,
-        onTick: (msg) => onLog(`  ${msg}`),
-      },
-    );
+    // Anti-race: marca ZernioPostId com "PROCESSING-<timestamp>" ANTES de
+    // chamar o Zernio. O cron filtra por ZernioPostId is_empty — esse marker
+    // garante que se o registrarResultado falhar, o próximo tick NÃO pega
+    // a mesma linha de novo (evita publicar 2x). Limpamos o marker em caso
+    // de exceção pra cron poder retomar futuramente.
+    const lockMarker = `PROCESSING-${Date.now()}`;
+    await notion.pages.update({
+      page_id: linha.pageId,
+      properties: {
+        ZernioPostId: { rich_text: chunkRichText(lockMarker) },
+      } as never,
+    });
+
+    let resultados: Awaited<ReturnType<typeof publicarTudo>>['resultados'];
+    let redesIgnoradas: Awaited<ReturnType<typeof publicarTudo>>['redesIgnoradas'];
+    let zernioPostId: Awaited<ReturnType<typeof publicarTudo>>['zernioPostId'];
+    try {
+      ({ resultados, redesIgnoradas, zernioPostId } = await publicarTudo(
+        tenant,
+        planoFinal,
+        midia,
+        {
+          scheduledFor: noPassado ? undefined : linha.dataPublicacao,
+          accountIdsOverride,
+          onTick: (msg) => onLog(`  ${msg}`),
+        },
+      ));
+    } catch (err) {
+      // Zernio falhou completamente: solta o lock pro próximo tick tentar de novo.
+      await notion.pages
+        .update({
+          page_id: linha.pageId,
+          properties: { ZernioPostId: { rich_text: [] } } as never,
+        })
+        .catch((e) => onLog(`  aviso: falha ao soltar lock: ${(e as Error).message}`));
+      throw err;
+    }
 
     for (const r of resultados) {
       if (r.status === 'agendado') {

@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { globalConfig } from '../config';
+import { comTimeoutERetry } from '../lib/resiliencia';
 import type { FrameExtraido } from '../ingest/extrairFrames';
 import type { MetaArquivo, PlanoPublicacao, Rede } from '../types';
 
@@ -149,12 +150,16 @@ export async function gerarPlanoComInferencia(
     });
   }
 
-  const resposta = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT_COM_META,
-    messages: [{ role: 'user', content: userContent }],
-  });
+  const resposta = await comTimeoutERetry(
+    () =>
+      client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2048,
+        system: SYSTEM_PROMPT_COM_META,
+        messages: [{ role: 'user', content: userContent }],
+      }),
+    { nome: 'Anthropic.cerebro.comMeta', timeoutMs: 60_000 },
+  );
 
   const blocoTexto = resposta.content.find((b) => b.type === 'text');
   if (!blocoTexto || blocoTexto.type !== 'text') {
@@ -230,12 +235,16 @@ export async function gerarPlano(
     });
   }
 
-  const resposta = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userContent }],
-  });
+  const resposta = await comTimeoutERetry(
+    () =>
+      client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2048,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userContent }],
+      }),
+    { nome: 'Anthropic.cerebro', timeoutMs: 60_000 },
+  );
 
   const blocoTexto = resposta.content.find((b) => b.type === 'text');
   if (!blocoTexto || blocoTexto.type !== 'text') {

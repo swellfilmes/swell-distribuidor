@@ -4,6 +4,7 @@ import type { TenantConfig } from '@/src/tenant';
 import type { PlanoPublicacao, Rede } from '@/src/types';
 import {
   carregarPost,
+  assertPagePertenceAoTenant,
   STATUS_VALORES,
   TIPO_VALORES,
   REDE_VALORES,
@@ -73,7 +74,8 @@ export async function patchPostNoNotion(
   let novoCopyTextual: string | null = null;
 
   if (input.copy && Object.keys(input.copy).length > 0) {
-    // 1 roundtrip Notion (necessário pra mergear copy estruturada)
+    // 1 roundtrip Notion (necessário pra mergear copy estruturada). carregarPost
+    // já valida ownership (retorna null se a página for de outro tenant).
     const atual = await carregarPost(tenant, pageId);
     if (!atual) throw new Error('Post não encontrado pra editar copy.');
     if (!atual.plano) {
@@ -141,6 +143,12 @@ export async function patchPostNoNotion(
 
   if (Object.keys(properties).length === 0) {
     return { campos: [] };
+  }
+
+  // Quando NÃO editamos copy, ainda não validamos ownership. Faz isso aqui
+  // antes do write pra impedir IDOR (escrever em página de outro tenant).
+  if (novoPlano === null) {
+    await assertPagePertenceAoTenant(tenant, pageId);
   }
 
   // 1 roundtrip Notion (write)

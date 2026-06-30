@@ -6,6 +6,10 @@ import os from 'node:os';
 
 const exec = promisify(execFile);
 
+// Timeouts pra impedir worker travado em ffmpeg que pendurou (ex: URL R2 lenta).
+const FFPROBE_TIMEOUT_MS = 30_000;
+const FFMPEG_TIMEOUT_MS = 5 * 60 * 1000;
+
 export interface FrameExtraido {
   timestampSeg: number;
   base64: string;
@@ -18,7 +22,7 @@ async function obterDuracaoSeg(caminhoVideo: string): Promise<number> {
     '-show_entries', 'format=duration',
     '-of', 'default=noprint_wrappers=1:nokey=1',
     caminhoVideo,
-  ]);
+  ], { timeout: FFPROBE_TIMEOUT_MS });
   const dur = parseFloat(stdout.trim());
   if (!Number.isFinite(dur) || dur <= 0) {
     throw new Error(`Não consegui ler a duração do vídeo (${caminhoVideo}).`);
@@ -57,7 +61,7 @@ export async function extrairFrames(
         '-q:v', '3',
         '-y',
         out,
-      ]);
+      ], { timeout: FFMPEG_TIMEOUT_MS });
     }
 
     const frames: FrameExtraido[] = [];
@@ -96,7 +100,7 @@ export async function extrairFrameHiRes(
     '-q:v', '2',
     '-y',
     caminhoArquivo,
-  ]);
+  ], { timeout: FFMPEG_TIMEOUT_MS });
   return {
     caminhoArquivo,
     limpar: async () => rm(tmpDir, { recursive: true, force: true }),
