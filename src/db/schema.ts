@@ -69,6 +69,10 @@ export const tenantSecrets = pgTable('tenant_secrets', {
   // e conectam via onboarding wizard (OAuth Notion / form Zernio).
   notionApiKeyEncrypted: text('notion_api_key_encrypted'),
   notionDbId: text('notion_db_id'),
+  // Banco separado no Notion onde cada cliente desse tenant tem 1 linha
+  // (Profile Zernio + accountIds por rede). Nullable: tenant só precisa
+  // disso quando vai operar com multi-cliente (Fase de Profiles).
+  notionClientsDbId: text('notion_clients_db_id'),
 
   zernioApiKeyEncrypted: text('zernio_api_key_encrypted'),
   zernioYoutubeAccountId: text('zernio_youtube_account_id'),

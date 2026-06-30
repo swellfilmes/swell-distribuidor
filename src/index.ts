@@ -26,6 +26,9 @@ import { repararCopyQuebradas } from './maintenance/repararCopy';
 import { atualizarZernioAgendadosAte } from './maintenance/atualizarZernioAgendados';
 import { gerarThumbnailsPeriodo } from './maintenance/gerarThumbnailsPeriodo';
 import { cancelarAgendamento } from './maintenance/cancelarAgendamento';
+import { executarNovoCliente } from './clientes/novoCliente';
+import { executarVerificarCliente } from './clientes/verificarCliente';
+import type { Rede } from './types';
 import { loadTenantConfig, listarEmpresasAtivas } from './db/tenantConfig';
 import type { TenantConfig } from './config';
 
@@ -45,6 +48,8 @@ function uso() {
   console.log('  npm run distribuir -- [--empresa <slug>] --avaliar-copy');
   console.log('  npm run distribuir -- [--empresa <slug>] --agendar-todas');
   console.log('  npm run distribuir -- [--empresa <slug>] --cancelar-agendamento <pageId>');
+  console.log('  npm run distribuir -- [--empresa <slug>] --novo-cliente <clientId> [--instagram] [--youtube] [--tiktok] [--linkedin] [--nome "Display Name"]');
+  console.log('  npm run distribuir -- [--empresa <slug>] --verificar-cliente <clientId>');
   console.log('');
   console.log('Se --empresa não for passado, usa "swell" como padrão.');
 }
@@ -164,6 +169,60 @@ async function main() {
       process.exit(1);
     }
     await cancelarAgendamento(tenant, pageId, (msg) => log('cancelar', msg));
+    return;
+  }
+
+  if (arg === '--novo-cliente') {
+    const clientId = argv[1];
+    if (!clientId) {
+      console.error('❌ Faltou o clientId. Uso: --novo-cliente <slug> [--instagram] [--youtube] [--tiktok] [--linkedin] [--nome "Display"]');
+      process.exit(1);
+    }
+    const redes: Rede[] = [];
+    if (argv.includes('--instagram')) redes.push('instagram');
+    if (argv.includes('--youtube')) redes.push('youtube');
+    if (argv.includes('--tiktok')) redes.push('tiktok');
+    if (argv.includes('--linkedin')) redes.push('linkedin');
+    const nomeIdx = argv.indexOf('--nome');
+    const nome = nomeIdx >= 0 ? argv[nomeIdx + 1] : undefined;
+    const redirectIdx = argv.indexOf('--redirect-url');
+    const redirectUrl = redirectIdx >= 0 ? argv[redirectIdx + 1] : undefined;
+    try {
+      const r = await executarNovoCliente(tenant, clientId, { redes, nome, redirectUrl }, (msg) => log('cliente', msg));
+      log('cliente', '');
+      log('cliente', '═══════════════════════════════════════════════════════════');
+      log('cliente', `✅ Cliente "${r.clientId}" criado.`);
+      log('cliente', `   Notion: ${r.notionPageUrl}`);
+      log('cliente', `   ZernioProfileId: ${r.zernioProfileId}`);
+      log('cliente', '');
+      log('cliente', 'Compartilha os links abaixo com o cliente — cada um conecta UMA rede:');
+      for (const l of r.links) {
+        log('cliente', `  ${l.rede.padEnd(10)} → ${l.authUrl}`);
+      }
+      log('cliente', '');
+      log('cliente', `Depois que ele autorizar, rode: --verificar-cliente ${r.clientId}`);
+      log('cliente', '═══════════════════════════════════════════════════════════');
+    } catch (err) {
+      console.error('❌', err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+    return;
+  }
+
+  if (arg === '--verificar-cliente') {
+    const clientId = argv[1];
+    if (!clientId) {
+      console.error('❌ Faltou o clientId. Uso: --verificar-cliente <slug>');
+      process.exit(1);
+    }
+    try {
+      const r = await executarVerificarCliente(tenant, clientId, (msg) => log('cliente', msg));
+      log('cliente', '');
+      log('cliente', `Resumo: ${Object.keys(r.conectadas).length} conectada(s), ${r.pendentes.length} pendente(s). Status no Notion: ${r.novoStatus}.`);
+    } catch (err) {
+      console.error('❌', err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
     return;
   }
 

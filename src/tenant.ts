@@ -14,6 +14,10 @@ export interface TenantConfig {
   // notionDo/zernioDo em src/lib/clients lançam erro claro se nulo.
   notionApiKey?: string;
   notionDbId?: string;
+  /** Banco Notion separado onde cada cliente desse tenant tem 1 linha
+   * (Profile Zernio + accountIds por rede). Só preenchido pra tenants
+   * que operam com multi-cliente (Profiles do Zernio). */
+  notionClientsDbId?: string;
   zernioApiKey?: string;
   zernioYoutubeAccountId?: string;
   zernioInstagramAccountId?: string;
