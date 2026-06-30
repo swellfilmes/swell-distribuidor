@@ -17,3 +17,5 @@ google-service-account.json
 *.mp4
 *.mov
 .vercel
+.claude/
+COMO-FUNCIONA.md
