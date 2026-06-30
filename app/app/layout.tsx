@@ -8,6 +8,13 @@ import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
 import { loadTenantConfig } from '@/src/db/tenantConfig';
 import { temNotionConectado, temZernioConectado } from '@/src/tenant';
 
+// Flag de kill-switch pro gate de termos. Se a coluna `termos_aceitos` ainda
+// não foi criada no DB de produção (migration pendente), o gate quebra a
+// experiência. Default: gate ATIVO. Setar TERMOS_GATE_OFF=1 no Vercel/Railway
+// pra desligar temporariamente. Reabilita removendo a env quando o
+// `db:push` tiver rodado contra o DB certo.
+const TERMOS_GATE_ATIVO = process.env.TERMOS_GATE_OFF !== '1';
+
 // Sem isso, Next 16 podia cachear o layout entre requests e o banner
 // "ainda precisa conectar Zernio" ficava preso mesmo após o testador
 // conectar uma rede (estado novo no banco não era lido).
@@ -58,28 +65,34 @@ export default async function DashboardLayout({
   // (vem do upsert no banco) — passamos como prop pra evitar piscar a tela
   // do app antes do client buscar o status. Se ainda não aceitou, o gate
   // bloqueia em fullscreen e impede qualquer interação com a sidebar/app.
-  const jaAceitouTermos = Boolean(user.termosAceitosEm);
+  // Quando TERMOS_GATE_OFF=1, ignora o estado e libera o app (kill-switch
+  // pra emergência tipo coluna pendente em prod).
+  const jaAceitouTermos = !TERMOS_GATE_ATIVO || Boolean(user.termosAceitosEm);
+
+  const conteudo = (
+    <div className="flex min-h-screen bg-app text-fg">
+      <Sidebar isAdmin={user.role === 'admin'} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar
+          empresas={empresas.map((e) => ({ slug: e.slug, nome: e.nome }))}
+          ativaSlug={ativa?.slug ?? null}
+        />
+        {onboardingPendente && (
+          <OnboardingPendingBanner
+            empresaId={onboardingPendente.empresaId}
+            empresaNome={onboardingPendente.empresaNome}
+            notionPronto={onboardingPendente.notionPronto}
+            zernioPronto={onboardingPendente.zernioPronto}
+          />
+        )}
+        <main className="flex-1 px-8 py-8">{children}</main>
+      </div>
+    </div>
+  );
+
+  if (!TERMOS_GATE_ATIVO) return conteudo;
 
   return (
-    <AceiteTermosGate jaAceito={jaAceitouTermos}>
-      <div className="flex min-h-screen bg-app text-fg">
-        <Sidebar isAdmin={user.role === 'admin'} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar
-            empresas={empresas.map((e) => ({ slug: e.slug, nome: e.nome }))}
-            ativaSlug={ativa?.slug ?? null}
-          />
-          {onboardingPendente && (
-            <OnboardingPendingBanner
-              empresaId={onboardingPendente.empresaId}
-              empresaNome={onboardingPendente.empresaNome}
-              notionPronto={onboardingPendente.notionPronto}
-              zernioPronto={onboardingPendente.zernioPronto}
-            />
-          )}
-          <main className="flex-1 px-8 py-8">{children}</main>
-        </div>
-      </div>
-    </AceiteTermosGate>
+    <AceiteTermosGate jaAceito={jaAceitouTermos}>{conteudo}</AceiteTermosGate>
   );
 }
