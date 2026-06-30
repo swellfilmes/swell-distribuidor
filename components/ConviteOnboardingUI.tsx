@@ -44,26 +44,25 @@ export function ConviteOnboardingUI({
     const signupUrl = `/sign-up?redirect_url=${encodeURIComponent(`/convite/${token}`)}`;
     const signinUrl = `/sign-in?redirect_url=${encodeURIComponent(`/convite/${token}`)}`;
     return (
-      <div className="space-y-4 rounded-xl border border-ink/10 bg-white p-6 shadow-sm">
-        <div className="text-sm text-ink/75">
+      <div className="space-y-4 rounded-2xl border border-border-soft/40 bg-surface/60 p-6 backdrop-blur">
+        <div className="text-sm text-text-secondary">
           Antes de criar sua empresa, faça login ou crie sua conta.
         </div>
         {emailSugerido && (
-          <div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            💡 Quem te convidou sugeriu o email <b>{emailSugerido}</b> — você pode
-            usar esse ou outro.
+          <div className="rounded-lg border border-primary/20 bg-primary/8 px-3 py-2 text-xs text-text-primary">
+            💡 Quem te convidou sugeriu o email <b className="text-primary">{emailSugerido}</b> — você pode usar esse ou outro.
           </div>
         )}
         <div className="flex flex-col gap-2 sm:flex-row">
           <a
             href={signupUrl}
-            className="flex-1 rounded-md bg-ink px-4 py-3 text-center text-sm font-medium text-white hover:bg-ink/85"
+            className="flex-1 rounded-lg bg-primary px-4 py-3 text-center text-sm font-medium text-app hover:opacity-90"
           >
             Criar conta
           </a>
           <a
             href={signinUrl}
-            className="flex-1 rounded-md border border-ink/15 px-4 py-3 text-center text-sm font-medium hover:bg-ink/5"
+            className="flex-1 rounded-lg border border-border-soft/40 px-4 py-3 text-center text-sm font-medium text-text-primary hover:bg-surface-2/60"
           >
             Já tenho conta
           </a>
@@ -98,10 +97,10 @@ export function ConviteOnboardingUI({
   return (
     <form
       onSubmit={submeter}
-      className="space-y-5 rounded-xl border border-ink/10 bg-white p-6 shadow-sm"
+      className="space-y-5 rounded-2xl border border-border-soft/40 bg-surface/60 p-6 backdrop-blur"
     >
-      <div className="space-y-1">
-        <label className="text-sm font-medium">Nome da sua empresa</label>
+      <div className="space-y-1.5">
+        <label className="text-[13px] font-medium text-text-primary">Nome da sua empresa</label>
         <input
           type="text"
           value={nome}
@@ -109,13 +108,13 @@ export function ConviteOnboardingUI({
           placeholder="Ex: Becogelato"
           required
           autoFocus
-          className="w-full rounded-md border border-ink/15 bg-white px-3 py-2.5 text-sm focus:border-ink focus:outline-none"
+          className="w-full rounded-lg border border-border-soft/40 bg-surface-2/60 px-3 py-2.5 text-sm text-text-primary placeholder-text-secondary/50 focus:border-primary/60 focus:bg-surface-2 focus:outline-none"
         />
       </div>
 
-      <div className="space-y-1">
-        <label className="text-sm font-medium">
-          Slug <span className="text-ink/45">(URL-safe, gerado automaticamente)</span>
+      <div className="space-y-1.5">
+        <label className="text-[13px] font-medium text-text-primary">
+          Slug <span className="text-text-secondary/60">(URL, gerado automaticamente)</span>
         </label>
         <input
           type="text"
@@ -127,15 +126,15 @@ export function ConviteOnboardingUI({
           pattern="[a-z0-9-]+"
           placeholder="becogelato"
           required
-          className="w-full rounded-md border border-ink/15 bg-white px-3 py-2.5 font-mono text-sm focus:border-ink focus:outline-none"
+          className="w-full rounded-lg border border-border-soft/40 bg-surface-2/60 px-3 py-2.5 font-mono text-sm text-text-primary placeholder-text-secondary/50 focus:border-primary/60 focus:bg-surface-2 focus:outline-none"
         />
-        <div className="text-xs text-ink/50">
+        <div className="text-[11px] text-text-secondary">
           Só letras minúsculas, números e hífens. Não pode mudar depois.
         </div>
       </div>
 
       {erro && (
-        <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-900">
+        <div className="rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-xs text-error">
           {erro}
         </div>
       )}
@@ -143,13 +142,13 @@ export function ConviteOnboardingUI({
       <button
         type="submit"
         disabled={criando || !nome.trim() || !slugEfetivo}
-        className="w-full rounded-md bg-ink px-4 py-3 text-sm font-medium text-white hover:bg-ink/85 disabled:opacity-40"
+        className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-app hover:opacity-90 disabled:opacity-40"
       >
         {criando ? 'Criando...' : 'Criar minha empresa →'}
       </button>
 
-      <p className="text-center text-xs text-ink/50">
-        Próximo passo: você conecta seu Notion e Zernio no wizard.
+      <p className="text-center text-[11px] text-text-secondary">
+        Próximo passo: você conecta seu Notion e suas redes no wizard.
       </p>
     </form>
   );
