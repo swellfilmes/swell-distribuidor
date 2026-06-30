@@ -21,7 +21,13 @@ type Etapa =
 interface ItemUpload {
   key: string;
   arquivo: File;
+  /** Carrossel: imagens extras que serão postadas junto. Vazio/undefined pra single. */
+  extras?: File[];
   etapa: Etapa;
+}
+
+function ehImagemFile(arquivo: File): boolean {
+  return mimeFallback(arquivo).startsWith('image/');
 }
 
 interface Job {
@@ -146,6 +152,66 @@ export function Uploader() {
       return;
     }
 
+    // Carrossel: sobe extras em paralelo. Falha de qualquer um aborta o job.
+    const extrasUploaded: Array<{ chaveR2: string; urlPublica: string; nomeArquivo: string }> = [];
+    if (item.extras && item.extras.length > 0) {
+      try {
+        const presigns = await Promise.all(
+          item.extras.map(async (ex) => {
+            const r = await fetch('/api/upload/url', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                nomeArquivo: ex.name,
+                contentType: mimeFallback(ex),
+                tamanhoBytes: ex.size,
+                lastModified: ex.lastModified,
+              }),
+            });
+            if (!r.ok) {
+              const d = (await r.json().catch(() => ({}))) as { error?: string };
+              throw new Error(d.error ?? `presign extra ${ex.name}`);
+            }
+            return (await r.json()) as { url: string; chaveR2: string; urlPublica: string };
+          }),
+        );
+        await Promise.all(
+          item.extras.map((ex, i) =>
+            new Promise<void>((resolve, reject) => {
+              const xhr = new XMLHttpRequest();
+              xhr.open('PUT', presigns[i].url);
+              xhr.setRequestHeader('content-type', mimeFallback(ex));
+              xhr.addEventListener('load', () =>
+                xhr.status >= 200 && xhr.status < 300
+                  ? resolve()
+                  : reject(new Error(`R2 retornou ${xhr.status} pra ${ex.name}`)),
+              );
+              xhr.addEventListener('error', () =>
+                reject(new Error(`Erro de rede subindo ${ex.name} no R2.`)),
+              );
+              xhr.send(ex);
+            }),
+          ),
+        );
+        for (let i = 0; i < item.extras.length; i++) {
+          extrasUploaded.push({
+            chaveR2: presigns[i].chaveR2,
+            urlPublica: presigns[i].urlPublica,
+            nomeArquivo: item.extras[i].name,
+          });
+        }
+      } catch (err) {
+        patchItem(key, (it) => ({
+          ...it,
+          etapa: {
+            tipo: 'erro',
+            erro: err instanceof Error ? err.message : String(err),
+          },
+        }));
+        return;
+      }
+    }
+
     try {
       const resp = await fetch('/api/jobs', {
         method: 'POST',
@@ -157,6 +223,7 @@ export function Uploader() {
             urlPublica: presign.urlPublica,
             nomeArquivo: arquivo.name,
             dedupeKey: presign.dedupeKey,
+            ...(extrasUploaded.length > 0 ? { extras: extrasUploaded } : {}),
           },
         }),
       });
@@ -181,15 +248,39 @@ export function Uploader() {
   }
 
   function adicionarArquivos(arquivos: FileList | File[]) {
-    const novos: ItemUpload[] = [];
+    const lista = Array.from(arquivos).filter(ehMidia);
     const existentes = new Set(itensRef.current.map((it) => it.key));
-    for (const arquivo of Array.from(arquivos)) {
-      if (!ehMidia(arquivo)) continue;
-      const key = chaveArquivo(arquivo);
-      if (existentes.has(key)) continue;
-      existentes.add(key);
-      novos.push({ key, arquivo, etapa: { tipo: 'fila', pct: 0 } });
+
+    // Separa em imagens vs vídeos. Imagens dropped no mesmo batch agrupam
+    // como UM carrossel (se >=2). Vídeos sempre viram itens individuais.
+    const imagens: File[] = [];
+    const novos: ItemUpload[] = [];
+    for (const arquivo of lista) {
+      if (ehImagemFile(arquivo)) {
+        imagens.push(arquivo);
+      } else {
+        const key = chaveArquivo(arquivo);
+        if (existentes.has(key)) continue;
+        existentes.add(key);
+        novos.push({ key, arquivo, etapa: { tipo: 'fila', pct: 0 } });
+      }
     }
+
+    if (imagens.length >= 2) {
+      // Agrupa todas as imagens dropped juntas como 1 carrossel.
+      const principal = imagens[0];
+      const extras = imagens.slice(1);
+      const key = `carrossel::${chaveArquivo(principal)}::${extras.length}`;
+      if (!existentes.has(key)) {
+        novos.push({ key, arquivo: principal, extras, etapa: { tipo: 'fila', pct: 0 } });
+      }
+    } else if (imagens.length === 1) {
+      const key = chaveArquivo(imagens[0]);
+      if (!existentes.has(key)) {
+        novos.push({ key, arquivo: imagens[0], etapa: { tipo: 'fila', pct: 0 } });
+      }
+    }
+
     if (novos.length === 0) return;
     setItens((atuais) => [...atuais, ...novos]);
   }
@@ -398,7 +489,11 @@ function ItemCard({
   item: ItemUpload;
   onRemover: () => void;
 }) {
-  const { arquivo, etapa } = item;
+  const { arquivo, extras, etapa } = item;
+  const ehCarrossel = (extras?.length ?? 0) > 0;
+  const todosOsArquivos = ehCarrossel ? [arquivo, ...(extras as File[])] : [arquivo];
+  const tamanhoTotalMB =
+    todosOsArquivos.reduce((soma, a) => soma + a.size, 0) / 1024 / 1024;
   const sucesso = etapa.tipo === 'concluido';
   const erro = etapa.tipo === 'erro';
   const borda = sucesso
@@ -414,10 +509,29 @@ function ItemCard({
     <div className={`rounded-lg border p-4 ${borda}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-ink/85">{arquivo.name}</p>
-          <p className="mt-0.5 text-xs text-ink/55">
-            {(arquivo.size / 1024 / 1024).toFixed(1)} MB
-          </p>
+          {ehCarrossel ? (
+            <>
+              <p className="flex items-center gap-1.5 text-sm font-medium text-ink/85">
+                <span>🎠 Carrossel</span>
+                <span className="rounded-full bg-ink/10 px-1.5 py-0.5 text-[10px] font-medium text-ink/70">
+                  {todosOsArquivos.length} imagens
+                </span>
+              </p>
+              <p className="mt-0.5 truncate text-xs text-ink/55">
+                {todosOsArquivos.map((a) => a.name).join(', ')}
+              </p>
+              <p className="mt-0.5 text-xs text-ink/55">
+                {tamanhoTotalMB.toFixed(1)} MB total
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="truncate text-sm font-medium text-ink/85">{arquivo.name}</p>
+              <p className="mt-0.5 text-xs text-ink/55">
+                {tamanhoTotalMB.toFixed(1)} MB
+              </p>
+            </>
+          )}
         </div>
         {podeRemover && (
           <button

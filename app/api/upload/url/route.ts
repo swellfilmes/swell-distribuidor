@@ -41,9 +41,9 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  if (!ct.startsWith('video/')) {
+  if (!ct.startsWith('video/') && !ct.startsWith('image/')) {
     return NextResponse.json(
-      { error: 'Só vídeos (content-type video/*).' },
+      { error: 'Só vídeo ou imagem (content-type video/* ou image/*).' },
       { status: 400 },
     );
   }

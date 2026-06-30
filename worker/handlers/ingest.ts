@@ -36,6 +36,12 @@ export interface PayloadIngest {
   chaveR2: string;
   urlPublica: string;
   nomeArquivo: string;
+  /**
+   * Carrossel: imagens EXTRAS (a 1ª fica nos campos acima). Cada uma já foi
+   * uploaded no R2 pelo client antes de criar o job. Worker baixa todas pra
+   * ler como frames e gravar urls em plano.mediasExtras.
+   */
+  extras?: Array<{ chaveR2: string; urlPublica: string; nomeArquivo: string }>;
 }
 
 export interface ResultadoIngest {
@@ -55,15 +61,34 @@ export async function processarIngest(
   const tenant = await loadTenantConfigById(empresaId);
   const baixado = await baixarDoR2(payload.chaveR2, payload.nomeArquivo);
 
+  // Carrossel: baixa também os extras pra usar como frames adicionais no cérebro.
+  const baixadosExtras: Array<Awaited<ReturnType<typeof baixarDoR2>>> = [];
+  if (payload.extras && payload.extras.length > 0) {
+    log(`⬇️  baixando ${payload.extras.length} imagem(ns) extra(s) do carrossel...`);
+    for (const ex of payload.extras) {
+      const b = await baixarDoR2(ex.chaveR2, ex.nomeArquivo);
+      baixadosExtras.push(b);
+    }
+  }
+
   try {
     const ehFoto = ehImagem(payload.nomeArquivo);
-    log(`🔍 ffprobe pra orientação + ${ehFoto ? 'lendo imagem (foto)' : 'extração de 6 frames'}...`);
-    const [orientacao, frames] = await Promise.all([
+    const ehCarrossel = (payload.extras?.length ?? 0) > 0;
+    log(`🔍 ffprobe pra orientação + ${ehCarrossel ? `lendo ${1 + (payload.extras?.length ?? 0)} imagens (carrossel)` : ehFoto ? 'lendo imagem (foto)' : 'extração de 6 frames'}...`);
+    const [orientacao, framePrincipal] = await Promise.all([
       detectarOrientacao(baixado.caminho),
       ehFoto
-        ? lerImagemComoFrame(baixado.caminho).then((f) => [f])
-        : extrairFrames(baixado.caminho, 6),
+        ? lerImagemComoFrame(baixado.caminho)
+        : extrairFrames(baixado.caminho, 6).then((fs) => fs),
     ]);
+    const frames = ehCarrossel
+      ? [
+          framePrincipal as Awaited<ReturnType<typeof lerImagemComoFrame>>,
+          ...(await Promise.all(baixadosExtras.map((b) => lerImagemComoFrame(b.caminho)))),
+        ]
+      : Array.isArray(framePrincipal)
+        ? framePrincipal
+        : [framePrincipal];
 
     log('🧠 cérebro: inferindo cliente/tipo + gerando copy...');
     const planoBruto = await gerarPlanoComInferencia(
@@ -76,13 +101,27 @@ export async function processarIngest(
       },
       frames,
     );
+    // Carrossel: força tipo na meta (cérebro pode chutar errado em batch)
+    if (ehCarrossel) {
+      planoBruto.meta.tipo = 'carrossel';
+    }
     log(`   cliente=${planoBruto.meta.cliente} tipo=${planoBruto.meta.tipo} redes=${planoBruto.redes.join(',')}`);
 
     log('✍️  redator: polindo no tom Swell...');
     const planoPolido = await polirCopy(planoBruto, frames);
 
     let plano = planoPolido;
-    if (!ehFoto) {
+    if (ehCarrossel) {
+      // Anexa URLs das imagens extras no plano pra publicação juntá-las no Zernio.
+      plano = {
+        ...planoPolido,
+        mediasExtras: (payload.extras ?? []).map((e) => ({
+          urlPublica: e.urlPublica,
+          chaveR2: e.chaveR2,
+        })),
+      };
+      log(`🎠 carrossel: ${plano.mediasExtras?.length ?? 0} mídia(s) extra(s) anexada(s) ao plano.`);
+    } else if (!ehFoto) {
       try {
         const thumb = await gerarThumbnailDoVideoLocal(tenant, baixado.caminho, planoPolido, (msg) =>
           log(`   ${msg}`),
@@ -113,6 +152,7 @@ export async function processarIngest(
     };
   } finally {
     await baixado.limpar().catch(() => {});
+    await Promise.all(baixadosExtras.map((b) => b.limpar().catch(() => {})));
     void path;
   }
 }
