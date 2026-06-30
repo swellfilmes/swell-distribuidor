@@ -18,8 +18,8 @@ export function StepPronto({ empresaNome, empresaSlug }: Props) {
           {empresaNome} pronta pra publicar
         </h2>
         <p className="mt-2 text-sm text-ink/70">
-          Notion e Zernio conectados. Agora você pode subir vídeos, ver a IA
-          gerar as legendas, aprovar no Notion e publicar.
+          Notion e Zernio conectados. Agora você pode subir vídeos, fotos ou
+          carrosséis, ver a IA gerar as legendas, aprovar no Notion e publicar.
         </p>
       </div>
 
@@ -28,9 +28,9 @@ export function StepPronto({ empresaNome, empresaSlug }: Props) {
           href={`/app/upload?empresa=${empresaSlug}`}
           className="block rounded-lg border border-ink/10 bg-white p-4 hover:bg-ink/[0.02]"
         >
-          <div className="font-medium">📤 Subir primeiro vídeo</div>
+          <div className="font-medium">📤 Subir primeira mídia</div>
           <div className="mt-1 text-xs text-ink/55">
-            Arrasta um .mp4, a IA classifica e gera as legendas em ~30s.
+            Arrasta um .mp4, .jpg ou .png — a IA classifica e gera as legendas em ~30s.
           </div>
         </Link>
         <Link

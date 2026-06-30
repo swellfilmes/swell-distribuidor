@@ -46,8 +46,8 @@ export function StepBoasVindas({ empresaNome, empresaSlug, onAvancar }: Props) {
           <div>
             <div className="font-medium">Pronto pra publicar</div>
             <div className="text-ink/55">
-              Sobe um vídeo, aprova no Notion, e o sistema publica em todas as
-              redes.
+              Sobe um vídeo ou foto, aprova no Notion, e o sistema publica em
+              todas as redes.
             </div>
           </div>
         </li>

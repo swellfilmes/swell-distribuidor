@@ -88,21 +88,38 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
             />
           )}
 
-          {post.videoUrl && (
-            <details className="mb-4 rounded-lg border border-ink/10 bg-white">
-              <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-ink/80">
-                Ver vídeo
-              </summary>
-              <div className="border-t border-ink/10 p-3">
-                <video
-                  src={post.videoUrl}
-                  controls
-                  preload="metadata"
-                  className="w-full rounded"
-                />
-              </div>
-            </details>
-          )}
+          {post.videoUrl && (() => {
+            const url = post.videoUrl.toLowerCase();
+            const ehImagem =
+              url.endsWith('.jpg') ||
+              url.endsWith('.jpeg') ||
+              url.endsWith('.png') ||
+              url.endsWith('.webp');
+            return (
+              <details className="mb-4 rounded-lg border border-ink/10 bg-white">
+                <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-ink/80">
+                  Ver {ehImagem ? 'imagem' : 'vídeo'}
+                </summary>
+                <div className="border-t border-ink/10 p-3">
+                  {ehImagem ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={post.videoUrl}
+                      alt={post.nome}
+                      className="w-full rounded"
+                    />
+                  ) : (
+                    <video
+                      src={post.videoUrl}
+                      controls
+                      preload="metadata"
+                      className="w-full rounded"
+                    />
+                  )}
+                </div>
+              </details>
+            );
+          })()}
 
           <Section title="Resumo">
             <p className="text-sm text-ink/80">{post.resumo || '—'}</p>

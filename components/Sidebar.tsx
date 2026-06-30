@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 const itens = [
   { href: '/app', label: 'Visão geral', match: /^\/app$/ },
   { href: '/app/posts', label: 'Tabela', match: /^\/app\/posts/ },
-  { href: '/app/upload', label: 'Subir vídeo', match: /^\/app\/upload/ },
+  { href: '/app/upload', label: 'Subir mídia', match: /^\/app\/upload/ },
   { href: '/app/configuracoes', label: 'Configurações', match: /^\/app\/configuracoes/ },
 ];
 

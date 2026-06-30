@@ -434,7 +434,7 @@ export function Uploader() {
           />
         </svg>
         <p className="text-base font-medium text-ink/85">
-          Arrasta um ou vários vídeos aqui ou clica pra escolher
+          Arrasta vídeos ou fotos aqui ou clica pra escolher
         </p>
         <p className="mt-1 text-xs text-ink/55">
           MP4 / MOV / WEBM / JPG / PNG / WEBP — máx. {MAX_CONCORRENTES} subindo ao mesmo tempo

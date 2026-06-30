@@ -81,8 +81,8 @@ export async function POST(req: Request) {
         result: ex.result,
         mensagem:
           ex.status === 'done'
-            ? 'Esse vídeo já foi processado no último 1h. Reaproveitando.'
-            : 'Esse vídeo já está sendo processado (job em andamento). Conectando ao job existente.',
+            ? 'Esse arquivo já foi processado na última 1h. Reaproveitando.'
+            : 'Esse arquivo já está sendo processado (job em andamento). Conectando ao job existente.',
       });
     }
   } catch (err) {

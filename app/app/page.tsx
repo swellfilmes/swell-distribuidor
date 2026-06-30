@@ -1,9 +1,17 @@
+import Link from 'next/link';
 import { syncUsuarioAtual } from '@/lib-web/auth';
 import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
+import { carregarEmpresaDetalhada } from '@/lib-web/adminEmpresas';
+
+export const dynamic = 'force-dynamic';
 
 export default async function DashboardHome() {
   const user = await syncUsuarioAtual();
   const empresa = await getEmpresaAtiva();
+  const detalhe = empresa ? await carregarEmpresaDetalhada(empresa.id) : null;
+  const notionPronto = Boolean(detalhe?.notionApiKey && detalhe?.notionDbId);
+  const zernioPronto = Boolean(detalhe?.zernioApiKey);
+  const setupCompleto = notionPronto && zernioPronto;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -14,24 +22,73 @@ export default async function DashboardHome() {
         <p className="text-ink/60">
           {empresa
             ? `Empresa ativa: ${empresa.nome} (${empresa.slug}).`
-            : 'Você ainda não tem empresa vinculada — peça pro admin te adicionar.'}
+            : 'Você ainda não tem empresa vinculada — peça pro admin te adicionar ou use um link de convite.'}
         </p>
       </header>
 
-      <section className="rounded-lg border border-ink/10 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium">F2.2 pronta ✅</h2>
-        <p className="mt-2 text-sm text-ink/70">
-          Login com Clerk funcionando. Seletor de empresa funcionando. Próximas
-          fases vão preencher esta tela com:
-        </p>
-        <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-ink/70">
-          <li><strong>F2.3</strong> — Tabela do Notion em /app/posts</li>
-          <li><strong>F2.4</strong> — Upload de vídeo + cérebro em /app/upload</li>
-          <li><strong>F2.5</strong> — Aprovação + edição inline na tabela</li>
-          <li><strong>F2.6</strong> — Crons migrados pro Railway</li>
-          <li><strong>F2.7</strong> — Admin de empresas em /app/configuracoes</li>
-        </ul>
-      </section>
+      {empresa && !setupCompleto && (
+        <section className="rounded-lg border border-amber-200 bg-amber-50 p-5">
+          <h2 className="text-sm font-medium text-amber-900">Onboarding incompleto</h2>
+          <p className="mt-1 text-sm text-amber-800/85">
+            Falta conectar {!notionPronto && <b>Notion</b>}
+            {!notionPronto && !zernioPronto && ' e '}
+            {!zernioPronto && <b>Zernio</b>} pra publicar de verdade.
+          </p>
+          <Link
+            href="/app/onboarding"
+            className="mt-3 inline-block rounded-md bg-amber-900 px-3 py-2 text-xs font-medium text-amber-50 hover:bg-amber-800"
+          >
+            Continuar onboarding →
+          </Link>
+        </section>
+      )}
+
+      {empresa && setupCompleto && (
+        <section className="grid gap-3 sm:grid-cols-2">
+          <CartaoAcao
+            href="/app/upload"
+            titulo="📤 Subir mídia"
+            descricao="Vídeo, foto ou carrossel. A IA classifica e gera as legendas."
+          />
+          <CartaoAcao
+            href="/app/posts"
+            titulo="📋 Tabela de posts"
+            descricao="Calendário, aprovação e edição inline dos posts no Notion."
+          />
+          <CartaoAcao
+            href="/app/configuracoes"
+            titulo="⚙️ Configurações"
+            descricao="Suas integrações (Notion, Zernio), empresas e perfil."
+          />
+          {user?.role === 'admin' && (
+            <CartaoAcao
+              href="/app/admin"
+              titulo="🏢 Admin · Empresas"
+              descricao="Cadastrar novas empresas, convites por link, membros."
+            />
+          )}
+        </section>
+      )}
     </div>
+  );
+}
+
+function CartaoAcao({
+  href,
+  titulo,
+  descricao,
+}: {
+  href: string;
+  titulo: string;
+  descricao: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="block rounded-lg border border-ink/10 bg-white p-4 hover:bg-ink/[0.02]"
+    >
+      <div className="font-medium">{titulo}</div>
+      <div className="mt-1 text-xs text-ink/55">{descricao}</div>
+    </Link>
   );
 }

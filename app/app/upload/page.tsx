@@ -22,10 +22,11 @@ export default async function UploadPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold">Subir vídeo</h1>
+        <h1 className="text-2xl font-semibold">Subir mídia</h1>
         <p className="text-sm text-ink/60">
-          O cérebro analisa o vídeo, gera legenda por rede e cria a linha
-          aguardando aprovação no Notion da <strong>{empresa.nome}</strong>.
+          Aceita vídeo, foto ou carrossel (2+ fotos juntas). O cérebro analisa o
+          conteúdo, gera legenda por rede e cria a linha aguardando aprovação no
+          Notion da <strong>{empresa.nome}</strong>.
         </p>
       </header>
       <Uploader />
