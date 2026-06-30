@@ -1,12 +1,26 @@
 export type Orientacao = 'h' | 'v';
 
+/**
+ * Tipos de conteúdo. 'foto' e 'carrossel' são imagens; o resto é vídeo.
+ * Mantém o nome `TipoVideo` por retrocompat com código antigo — o conceito
+ * agora cobre vídeo E imagem (apesar do nome).
+ */
 export type TipoVideo =
   | 'aftermovie'
   | 'reel'
   | 'bastidor'
   | 'institucional'
   | 'minidoc'
-  | 'ai';
+  | 'ai'
+  | 'foto'
+  | 'carrossel';
+
+/** Categoria de mídia derivada do tipo: imagem vs vídeo. */
+export type CategoriaMidia = 'imagem' | 'video';
+
+export function categoriaDoTipo(tipo: TipoVideo): CategoriaMidia {
+  return tipo === 'foto' || tipo === 'carrossel' ? 'imagem' : 'video';
+}
 
 export type Rede = 'youtube' | 'instagram' | 'tiktok' | 'linkedin';
 

@@ -2,9 +2,10 @@ import { contaConfiguradaPara, notionDo, zernioDo } from '../lib/clients';
 import { reconciliarPlanoComNotion } from '../lib/reconciliarCopy';
 import { chunkRichText } from '../lib/notionChunks';
 import { notionDbIdDo, type TenantConfig } from '../config';
-import type {
-  CopyPorRede,
-  PlanoPublicacao,
+import {
+  categoriaDoTipo,
+  type CopyPorRede,
+  type PlanoPublicacao,
 } from '../types';
 
 function mesmaData(a: string | undefined, b: string | undefined): boolean {
@@ -228,16 +229,29 @@ export async function atualizarZernioAgendadosAte(
       body.timezone = 'America/Bahia';
     }
 
-    if (planoFinal.thumbnailUrl) {
-      body.mediaItems = [
-        {
-          type: 'video',
-          url: linha.videoUrl,
-          mimeType: 'video/mp4',
-          thumbnail: planoFinal.thumbnailUrl,
-          instagramThumbnail: planoFinal.thumbnailUrl,
-        },
-      ];
+    // Atualiza mediaItem mantendo o tipo correto (imagem vs vídeo) baseado
+    // no plano. Sem isso, mudar a copy de um post-foto reescreveria o
+    // mediaItem como vídeo no Zernio. Pra imagem, thumbnail não faz sentido.
+    const categoria = categoriaDoTipo(planoFinal.meta.tipo);
+    const ehImagem = categoria === 'imagem';
+    const mimeFromUrl = (() => {
+      const u = linha.videoUrl.toLowerCase();
+      if (u.endsWith('.png')) return 'image/png';
+      if (u.endsWith('.webp')) return 'image/webp';
+      if (u.endsWith('.jpg') || u.endsWith('.jpeg')) return 'image/jpeg';
+      return 'video/mp4';
+    })();
+    if (ehImagem || planoFinal.thumbnailUrl) {
+      const item: Record<string, unknown> = {
+        type: ehImagem ? 'image' : 'video',
+        url: linha.videoUrl,
+        mimeType: mimeFromUrl,
+      };
+      if (!ehImagem && planoFinal.thumbnailUrl) {
+        item.thumbnail = planoFinal.thumbnailUrl;
+        item.instagramThumbnail = planoFinal.thumbnailUrl;
+      }
+      body.mediaItems = [item];
     }
 
     try {

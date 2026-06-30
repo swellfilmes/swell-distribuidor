@@ -5,6 +5,8 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { notionDo } from '../lib/clients';
 import { extrairFrames } from '../ingest/extrairFrames';
+import { ehImagem } from '../ingest/parseNome';
+import { lerImagemComoFrame } from '../ingest/lerImagem';
 import { gerarPlanoComInferencia } from '../brain/cerebro';
 import { polirCopy } from '../brain/redator';
 import { gerarThumbnailDoVideoLocal } from '../brain/gerarThumbnail';
@@ -25,6 +27,8 @@ const EXTENSOES_VIDEO = new Set([
   '.mpeg',
   '.mpg',
 ]);
+const EXTENSOES_IMAGEM = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const EXTENSOES_TODAS = new Set([...EXTENSOES_VIDEO, ...EXTENSOES_IMAGEM]);
 
 interface VideoLocal {
   caminhoAbsoluto: string;
@@ -53,7 +57,7 @@ async function listarVideosLocal(
       }
       if (!e.isFile()) continue;
       const ext = path.extname(e.name).toLowerCase();
-      if (!EXTENSOES_VIDEO.has(ext)) continue;
+      if (!EXTENSOES_TODAS.has(ext)) continue;
       const s = await stat(full);
       const sourceId = createHash('sha1').update(full).digest('hex').slice(0, 24);
       videos.push({
@@ -149,9 +153,12 @@ async function processarUmVideo(
     return 'pulado';
   }
 
-  onLog(`  🔍  ffprobe + 6 frames...`);
+  const ehFoto = ehImagem(v.caminhoAbsoluto);
+  onLog(`  🔍  ffprobe + ${ehFoto ? 'lendo imagem (foto)' : '6 frames'}...`);
   const orientacao = await detectarOrientacao(v.caminhoAbsoluto);
-  const frames = await extrairFrames(v.caminhoAbsoluto, 6);
+  const frames = ehFoto
+    ? [await lerImagemComoFrame(v.caminhoAbsoluto)]
+    : await extrairFrames(v.caminhoAbsoluto, 6);
 
   onLog(`  🧠  cérebro (Sonnet 4.6) inferindo cliente/tipo + copy...`);
   const planoBruto = await gerarPlanoComInferencia(
@@ -170,7 +177,9 @@ async function processarUmVideo(
   const planoPolido = await polirCopy(planoBruto, frames);
 
   let plano = planoPolido;
-  try {
+  if (ehFoto) {
+    onLog(`  🖼️   foto: imagem é a própria thumb, pulo agent de thumbnail.`);
+  } else try {
     const thumb = await gerarThumbnailDoVideoLocal(tenant, v.caminhoAbsoluto, planoPolido, (msg) =>
       onLog(`  ${msg}`),
     );

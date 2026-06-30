@@ -3,6 +3,8 @@ import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import { baixarDoR2 } from '@/src/storage/r2';
 import { extrairFrames } from '@/src/ingest/extrairFrames';
+import { ehImagem } from '@/src/ingest/parseNome';
+import { lerImagemComoFrame } from '@/src/ingest/lerImagem';
 import { gerarPlanoComInferencia } from '@/src/brain/cerebro';
 import { polirCopy } from '@/src/brain/redator';
 import { gerarThumbnailDoVideoLocal } from '@/src/brain/gerarThumbnail';
@@ -54,10 +56,13 @@ export async function processarIngest(
   const baixado = await baixarDoR2(payload.chaveR2, payload.nomeArquivo);
 
   try {
-    log('🔍 ffprobe pra orientação + extração de 6 frames...');
+    const ehFoto = ehImagem(payload.nomeArquivo);
+    log(`🔍 ffprobe pra orientação + ${ehFoto ? 'lendo imagem (foto)' : 'extração de 6 frames'}...`);
     const [orientacao, frames] = await Promise.all([
       detectarOrientacao(baixado.caminho),
-      extrairFrames(baixado.caminho, 6),
+      ehFoto
+        ? lerImagemComoFrame(baixado.caminho).then((f) => [f])
+        : extrairFrames(baixado.caminho, 6),
     ]);
 
     log('🧠 cérebro: inferindo cliente/tipo + gerando copy...');
@@ -77,14 +82,18 @@ export async function processarIngest(
     const planoPolido = await polirCopy(planoBruto, frames);
 
     let plano = planoPolido;
-    try {
-      const thumb = await gerarThumbnailDoVideoLocal(tenant, baixado.caminho, planoPolido, (msg) =>
-        log(`   ${msg}`),
-      );
-      plano = { ...planoPolido, thumbnailUrl: thumb.thumbnailUrl };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      log(`⚠️  thumbnail falhou (sigo sem): ${msg}`);
+    if (!ehFoto) {
+      try {
+        const thumb = await gerarThumbnailDoVideoLocal(tenant, baixado.caminho, planoPolido, (msg) =>
+          log(`   ${msg}`),
+        );
+        plano = { ...planoPolido, thumbnailUrl: thumb.thumbnailUrl };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log(`⚠️  thumbnail falhou (sigo sem): ${msg}`);
+      }
+    } else {
+      log('🖼️  foto: imagem é a própria thumb, pulo agent de thumbnail.');
     }
 
     log('📝 criando linha no Notion...');

@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { parseNome } from './ingest/parseNome';
+import { ehImagem, parseNome } from './ingest/parseNome';
 import { extrairFrames } from './ingest/extrairFrames';
+import { lerImagemComoFrame } from './ingest/lerImagem';
 import { gerarPlano } from './brain/cerebro';
 import { polirCopy } from './brain/redator';
 import { gerarThumbnailDoVideoLocal } from './brain/gerarThumbnail';
@@ -197,11 +198,21 @@ async function main() {
     `cliente=${meta.cliente} tipo=${meta.tipo} orientacao=${meta.orientacao}`,
   );
 
-  log('ingest', 'extraindo 6 frames do vídeo...');
-  const frames = await extrairFrames(caminho, 6);
-  log('ingest', `${frames.length} frames extraídos.`);
+  const ehFoto = ehImagem(caminho);
 
-  log('brain', 'chamando Claude (Sonnet 4.6) com os frames + meta...');
+  // Pipeline branching: vídeo extrai 6 frames + roda thumbnail agent.
+  // Imagem (foto) é o próprio frame, pula extração e thumbnail (ela é a thumb).
+  let frames;
+  if (ehFoto) {
+    log('ingest', 'arquivo é imagem — pulo extração de frames.');
+    frames = [await lerImagemComoFrame(caminho)];
+  } else {
+    log('ingest', 'extraindo 6 frames do vídeo...');
+    frames = await extrairFrames(caminho, 6);
+    log('ingest', `${frames.length} frames extraídos.`);
+  }
+
+  log('brain', 'chamando Claude (Sonnet 4.6) com o(s) frame(s) + meta...');
   const planoBruto = await gerarPlano(meta, frames);
   log('brain', `redes escolhidas: ${planoBruto.redes.join(', ')}`);
   log('brain', `conteudoAI=${planoBruto.conteudoAI}`);
@@ -211,16 +222,20 @@ async function main() {
   const planoPolido = await polirCopy(planoBruto, frames);
 
   let plano = planoPolido;
-  try {
-    log('thumb', 'gerando thumbnail...');
-    const thumb = await gerarThumbnailDoVideoLocal(tenant, caminho, planoPolido, (msg) => log('thumb', msg));
-    plano = { ...planoPolido, thumbnailUrl: thumb.thumbnailUrl };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    log('thumb', `⚠️  thumbnail falhou (sigo sem): ${msg}`);
+  if (!ehFoto) {
+    try {
+      log('thumb', 'gerando thumbnail...');
+      const thumb = await gerarThumbnailDoVideoLocal(tenant, caminho, planoPolido, (msg) => log('thumb', msg));
+      plano = { ...planoPolido, thumbnailUrl: thumb.thumbnailUrl };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log('thumb', `⚠️  thumbnail falhou (sigo sem): ${msg}`);
+    }
+  } else {
+    log('thumb', 'foto: imagem é a própria thumb, pulo agent de thumbnail.');
   }
 
-  log('storage', 'subindo vídeo pro R2...');
+  log('storage', `subindo ${ehFoto ? 'imagem' : 'vídeo'} pro R2...`);
   const midia = await subirParaR2(tenant, caminho);
   log('storage', `URL pública: ${midia.urlPublica}`);
 

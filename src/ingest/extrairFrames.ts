@@ -9,7 +9,7 @@ const exec = promisify(execFile);
 export interface FrameExtraido {
   timestampSeg: number;
   base64: string;
-  mediaType: 'image/jpeg';
+  mediaType: 'image/jpeg' | 'image/png' | 'image/webp';
 }
 
 async function obterDuracaoSeg(caminhoVideo: string): Promise<number> {

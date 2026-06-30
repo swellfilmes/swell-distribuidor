@@ -1,11 +1,12 @@
 import { contaConfiguradaPara, zernioDo } from '../lib/clients';
 import type { TenantConfig } from '../config';
-import type {
-  CopyPorRede,
-  MidiaHospedada,
-  PlanoPublicacao,
-  Rede,
-  ResultadoPublicacao,
+import {
+  categoriaDoTipo,
+  type CopyPorRede,
+  type MidiaHospedada,
+  type PlanoPublicacao,
+  type Rede,
+  type ResultadoPublicacao,
 } from '../types';
 
 const POLL_INTERVALO_MS = 8_000;
@@ -195,12 +196,24 @@ export async function publicarTudo(
     plano.copy.find((c) => redesPublicaveis.includes(c.rede))?.descricao ?? '';
 
   try {
+    // Categoria deriva do tipo do plano (foto/carrossel → imagem; resto → video).
+    // mimeType deduzido pela URL do R2 (que o subirParaR2 já gravou correto).
+    const categoria = categoriaDoTipo(plano.meta.tipo);
+    const ehImagem = categoria === 'imagem';
+    const mimeFromUrl = (() => {
+      const url = midia.urlPublica.toLowerCase();
+      if (url.endsWith('.png')) return 'image/png';
+      if (url.endsWith('.webp')) return 'image/webp';
+      if (url.endsWith('.jpg') || url.endsWith('.jpeg')) return 'image/jpeg';
+      return 'video/mp4';
+    })();
     const mediaItem: Record<string, unknown> = {
-      type: 'video',
+      type: ehImagem ? 'image' : 'video',
       url: midia.urlPublica,
-      mimeType: 'video/mp4',
+      mimeType: mimeFromUrl,
     };
-    if (plano.thumbnailUrl) {
+    // Thumbnail só faz sentido pra vídeo. Imagem é a própria capa.
+    if (!ehImagem && plano.thumbnailUrl) {
       mediaItem.thumbnail = plano.thumbnailUrl;
       mediaItem.instagramThumbnail = plano.thumbnailUrl;
     }
