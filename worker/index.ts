@@ -16,9 +16,11 @@ import { processarIngest, type PayloadIngest } from './handlers/ingest';
 import { publicarAprovadosTodas } from './crons/publicarAprovadosTodas';
 import { sincronizarEditsTodas } from './crons/sincronizarEditsTodas';
 import { atualizarPendentesTodas } from './crons/atualizarPendentesTodas';
-import { initSentryWorker, captureException } from './lib/sentry';
-
-initSentryWorker();
+// Sentry desabilitado temporariamente — voltar quando a investigação do
+// 500 em prod terminar (PROXIMOS-PASSOS Onda 1, item observability).
+function captureException(_err: unknown, _ctx?: Record<string, unknown>): void {
+  // no-op
+}
 
 const INTERVALO_POLL_MS = 5_000;
 const MAX_CONCURRENCY = 1;

@@ -25,7 +25,6 @@
     "@clerk/themes": "^2.4.57",
     "@neondatabase/serverless": "^1.1.0",
     "@notionhq/client": "^2.2.15",
-    "@sentry/nextjs": "^10.62.0",
     "@zernio/node": "^0.2.247",
     "croner": "^10.0.1",
     "dotenv": "^16.4.5",
