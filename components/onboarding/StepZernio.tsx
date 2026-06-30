@@ -10,7 +10,10 @@ interface Props {
   zernioInstagramAccountId: string | null;
   zernioTiktokAccountId: string | null;
   zernioLinkedinAccountId: string | null;
-  onAvancar: () => void;
+  /** Opcional. Quando não passado (ex: usado em /configuracoes), oculta o
+   * botão "Próximo: pronto!". Server Components NÃO podem passar funções
+   * pra Client Components — só ausência ou data serializável. */
+  onAvancar?: () => void;
 }
 
 type Rede = 'instagram' | 'youtube' | 'tiktok' | 'linkedin';
@@ -141,7 +144,7 @@ export function StepZernio({
   }, [recemConectou, sincronizar]);
 
   const conectadasCount = Object.keys(contas).length;
-  const podeAvancar = conectadasCount > 0;
+  const podeAvancar = conectadasCount > 0 && Boolean(onAvancar);
 
   return (
     <div className="space-y-6">
@@ -250,7 +253,7 @@ export function StepZernio({
         >
           Atualizar status
         </button>
-        {podeAvancar && (
+        {podeAvancar && onAvancar && (
           <button
             onClick={onAvancar}
             className="flex-1 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-app hover:opacity-90"

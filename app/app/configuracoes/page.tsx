@@ -115,7 +115,6 @@ export default async function ConfiguracoesPage() {
                     zernioInstagramAccountId={detalhe.zernioInstagramAccountId || null}
                     zernioTiktokAccountId={detalhe.zernioTiktokAccountId || null}
                     zernioLinkedinAccountId={detalhe.zernioLinkedinAccountId || null}
-                    onAvancar={() => {}}
                   />
                 </Suspense>
               </div>
