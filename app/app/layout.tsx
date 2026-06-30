@@ -48,9 +48,9 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-app text-text-primary">
       <Sidebar isAdmin={user.role === 'admin'} />
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
           empresas={empresas.map((e) => ({ slug: e.slug, nome: e.nome }))}
           ativaSlug={ativa?.slug ?? null}
@@ -63,7 +63,7 @@ export default async function DashboardLayout({
             zernioPronto={onboardingPendente.zernioPronto}
           />
         )}
-        <main className="flex-1 px-6 py-8">{children}</main>
+        <main className="flex-1 px-8 py-8">{children}</main>
       </div>
     </div>
   );

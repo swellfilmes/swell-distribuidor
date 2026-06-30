@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html,
@@ -12,7 +12,55 @@ body {
 }
 
 body {
-  background: #f7f5f0;
-  color: #0a0a0a;
+  background: #08131f;
+  color: #f8fafc;
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
   font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tipografia: títulos com DM Serif Display, texto com Inter. */
+h1,
+h2,
+.font-serif {
+  font-family: var(--font-dm-serif), 'DM Serif Display', Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+/* Scrollbar discreta no estilo Linear/Stripe (Chromium). */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #08131f;
+}
+::-webkit-scrollbar-thumb {
+  background: #223248;
+  border-radius: 999px;
+  border: 2px solid #08131f;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2e4361;
+}
+
+/* Seleção com tinta laranja Swell. */
+::selection {
+  background: rgba(255, 122, 0, 0.3);
+  color: #f8fafc;
+}
+
+/* Inputs default — tema dark. */
+input:not([type='checkbox']):not([type='radio']),
+textarea,
+select {
+  color-scheme: dark;
+}
+
+/* Focus ring uniforme no laranja Swell. */
+:where(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid #ff7a00;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
