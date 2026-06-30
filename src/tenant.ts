@@ -23,6 +23,10 @@ export interface TenantConfig {
   zernioInstagramAccountId?: string;
   zernioTiktokAccountId?: string;
   zernioLinkedinAccountId?: string;
+  /** Empresa-testador (criada via convite) usa Profile dentro da conta Zernio
+   * da Swell — não tem zernioApiKey própria. Aqui fica o profile_id retornado
+   * por zernio.profiles.createProfile no momento do onboarding. */
+  zernioProfileId?: string;
 }
 
 /** Helpers pra checar se uma empresa já tem Notion / Zernio prontos. */
@@ -31,19 +35,20 @@ export function temNotionConectado(t: TenantConfig): boolean {
 }
 
 /**
- * Zernio considera-se "conectado" quando há API key + pelo menos uma rede com
- * accountId preenchido. Sem accountId nenhum, o publicarTudo vai ignorar todas
- * as redes e o agendamento falha silenciosamente — pior UX que ainda em onboarding.
+ * Zernio considera-se "conectado" quando:
+ *  - Modo legacy (Swell): API key própria + ≥1 accountId
+ *  - Modo Profile (empresa-testador): zernioProfileId setado + ≥1 accountId
+ *    (a apiKey é herdada da Swell via zernioDo fallback).
  */
 export function temZernioConectado(t: TenantConfig): boolean {
-  const temApiKey = Boolean(t.zernioApiKey);
   const temAlgumaRede = Boolean(
     t.zernioInstagramAccountId ||
       t.zernioYoutubeAccountId ||
       t.zernioTiktokAccountId ||
       t.zernioLinkedinAccountId,
   );
-  return temApiKey && temAlgumaRede;
+  if (!temAlgumaRede) return false;
+  return Boolean(t.zernioApiKey) || Boolean(t.zernioProfileId);
 }
 
 export function integracoesCompletas(t: TenantConfig): boolean {

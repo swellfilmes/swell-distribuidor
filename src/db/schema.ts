@@ -79,6 +79,12 @@ export const tenantSecrets = pgTable('tenant_secrets', {
   zernioInstagramAccountId: text('zernio_instagram_account_id'),
   zernioTiktokAccountId: text('zernio_tiktok_account_id'),
   zernioLinkedinAccountId: text('zernio_linkedin_account_id'),
+  // Empresa-testador (criada via convite onboarding) NÃO tem zernioApiKey
+  // própria — herda a da Swell (tenant id=1) via fallback no zernioDo(). Tem
+  // 1 Profile dentro da conta Zernio Swell, identificado por esse profileId.
+  // accountIds acima são populados via listAccounts(profileId) após o testador
+  // conectar cada rede pelos links OAuth.
+  zernioProfileId: text('zernio_profile_id'),
 
   atualizadoEm: timestamp('atualizado_em', { withTimezone: true })
     .notNull()

@@ -43,6 +43,7 @@ export async function loadTenantConfig(slug: string): Promise<TenantConfig> {
     zernioInstagramAccountId: s.zernioInstagramAccountId ?? undefined,
     zernioTiktokAccountId: s.zernioTiktokAccountId ?? undefined,
     zernioLinkedinAccountId: s.zernioLinkedinAccountId ?? undefined,
+    zernioProfileId: s.zernioProfileId ?? undefined,
   };
 
   cache.set(slug, cfg);
@@ -73,6 +74,7 @@ export async function loadTenantConfigById(empresaId: number): Promise<TenantCon
     zernioInstagramAccountId: s.zernioInstagramAccountId ?? undefined,
     zernioTiktokAccountId: s.zernioTiktokAccountId ?? undefined,
     zernioLinkedinAccountId: s.zernioLinkedinAccountId ?? undefined,
+    zernioProfileId: s.zernioProfileId ?? undefined,
   };
 }
 

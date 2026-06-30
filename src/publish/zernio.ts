@@ -1,4 +1,4 @@
-import { contaConfiguradaPara, zernioDo } from '../lib/clients';
+import { contaConfiguradaPara, garantirZernioInicializado, zernioDo } from '../lib/clients';
 import type { TenantConfig } from '../config';
 import {
   categoriaDoTipo,
@@ -155,6 +155,9 @@ export async function publicarTudo(
   midia: MidiaHospedada,
   opts: OpcoesPublicar = {},
 ): Promise<ResumoPublicacao> {
+  // Empresa-testador (sem zernioApiKey, com zernioProfileId) precisa do
+  // Zernio compartilhado da Swell. Lazy-load idempotente.
+  await garantirZernioInicializado();
   const zernio = zernioDo(tenant);
   const onTick = opts.onTick;
   const isAgendado = Boolean(opts.scheduledFor);
