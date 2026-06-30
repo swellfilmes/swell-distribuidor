@@ -4,7 +4,6 @@ import { syncUsuarioAtual, listarEmpresasDoUsuario } from '@/lib-web/auth';
 import { getEmpresaAtiva } from '@/lib-web/empresaAtiva';
 import { carregarEmpresaDetalhada } from '@/lib-web/adminEmpresas';
 import { NotionConnectButton } from '@/components/NotionConnectButton';
-import { ZernioEditor } from '@/components/ZernioEditor';
 import { StepZernio } from '@/components/onboarding/StepZernio';
 
 export const dynamic = 'force-dynamic';
@@ -103,34 +102,22 @@ export default async function ConfiguracoesPage() {
 
               <div>
                 <div className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted/60">
-                  Redes sociais (Zernio)
+                  Redes sociais
                 </div>
-                {/* Empresa-testador (sem zernioApiKey própria) usa o fluxo novo
-                    de Profiles + links OAuth. Swell legacy continua com o
-                    editor manual de API key + account IDs. */}
-                {!detalhe.zernioApiKey ? (
-                  <Suspense fallback={null}>
-                    <StepZernio
-                      empresaId={detalhe.id}
-                      zernioPronto={zernioPronto}
-                      zernioYoutubeAccountId={detalhe.zernioYoutubeAccountId || null}
-                      zernioInstagramAccountId={detalhe.zernioInstagramAccountId || null}
-                      zernioTiktokAccountId={detalhe.zernioTiktokAccountId || null}
-                      zernioLinkedinAccountId={detalhe.zernioLinkedinAccountId || null}
-                      onAvancar={() => {}}
-                    />
-                  </Suspense>
-                ) : (
-                <ZernioEditor
-                  empresaId={detalhe.id}
-                  zernioPronto={zernioPronto}
-                  zernioYoutubeAccountId={detalhe.zernioYoutubeAccountId}
-                  zernioInstagramAccountId={detalhe.zernioInstagramAccountId}
-                  zernioTiktokAccountId={detalhe.zernioTiktokAccountId}
-                  zernioLinkedinAccountId={detalhe.zernioLinkedinAccountId}
-                  mostrarInstrucoes={false}
-                />
-                )}
+                {/* Fluxo unificado: TODA empresa conecta redes via Profile do
+                    Zernio (links OAuth). Sem mais formulário manual de API Key
+                    — é a Swell que paga a API. */}
+                <Suspense fallback={null}>
+                  <StepZernio
+                    empresaId={detalhe.id}
+                    zernioPronto={zernioPronto}
+                    zernioYoutubeAccountId={detalhe.zernioYoutubeAccountId || null}
+                    zernioInstagramAccountId={detalhe.zernioInstagramAccountId || null}
+                    zernioTiktokAccountId={detalhe.zernioTiktokAccountId || null}
+                    zernioLinkedinAccountId={detalhe.zernioLinkedinAccountId || null}
+                    onAvancar={() => {}}
+                  />
+                </Suspense>
               </div>
             </div>
           </section>

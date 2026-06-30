@@ -168,20 +168,25 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       };
     }
 
-    // Popula tenant_secrets com os accountIds descobertos (limpa redes
-    // desconectadas pra string vazia → respeitada pelo publish como pulada).
-    await comRetryDb(() =>
-      db
-        .update(tenantSecrets)
-        .set({
-          zernioInstagramAccountId: contas.instagram?.id ?? null,
-          zernioYoutubeAccountId: contas.youtube?.id ?? null,
-          zernioTiktokAccountId: contas.tiktok?.id ?? null,
-          zernioLinkedinAccountId: contas.linkedin?.id ?? null,
-          atualizadoEm: new Date(),
-        })
-        .where(eq(tenantSecrets.empresaId, empresaId)),
-    );
+    // Popula tenant_secrets com os accountIds descobertos. Importante: só
+    // sobrescreve se o Profile retornou ALGUMA conta. Se zero contas no
+    // Profile (testador ainda não clicou em link nenhum, ou Swell com Profile
+    // recém-criado vazio), mantém os accountIds que já estavam (Swell legacy).
+    const algumaContaNoProfile = Object.keys(contas).length > 0;
+    if (algumaContaNoProfile) {
+      await comRetryDb(() =>
+        db
+          .update(tenantSecrets)
+          .set({
+            zernioInstagramAccountId: contas.instagram?.id ?? tenant.zernioInstagramAccountId ?? null,
+            zernioYoutubeAccountId: contas.youtube?.id ?? tenant.zernioYoutubeAccountId ?? null,
+            zernioTiktokAccountId: contas.tiktok?.id ?? tenant.zernioTiktokAccountId ?? null,
+            zernioLinkedinAccountId: contas.linkedin?.id ?? tenant.zernioLinkedinAccountId ?? null,
+            atualizadoEm: new Date(),
+          })
+          .where(eq(tenantSecrets.empresaId, empresaId)),
+      );
+    }
     const slug = (
       await db.select({ slug: empresas.slug }).from(empresas).where(eq(empresas.id, empresaId)).limit(1)
     )[0]?.slug;
