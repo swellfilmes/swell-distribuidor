@@ -2,8 +2,8 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { ehImagem, parseNome } from './ingest/parseNome';
 import { extrairFrames } from './ingest/extrairFrames';
-import { lerImagemComoFrame } from './ingest/lerImagem';
-import { gerarPlano } from './brain/cerebro';
+import { lerImagemComoFrame, detectarOrientacaoImagem } from './ingest/lerImagem';
+import { gerarPlano, gerarPlanoComInferencia } from './brain/cerebro';
 import { polirCopy } from './brain/redator';
 import { gerarThumbnailDoVideoLocal } from './brain/gerarThumbnail';
 import { reconciliarPlanoComNotion } from './lib/reconciliarCopy';
@@ -207,15 +207,32 @@ async function main() {
   }
 
   log('ingest', `lendo nome do arquivo principal: ${path.basename(caminho)}`);
-  const meta = parseNome(caminho);
-  // Forçar tipo='carrossel' quando vier multi-arquivo (sobrescreve o que tava no nome).
-  if (ehCarrossel) {
-    meta.tipo = 'carrossel';
+
+  // Pra carrossel OU se o nome não bate no padrão cliente_tipo_orientacao,
+  // o cérebro infere meta. Senão, parseNome direto.
+  let parseFalhou: string | null = null;
+  let meta = (() => {
+    if (ehCarrossel) return null;
+    try {
+      return parseNome(caminho);
+    } catch (e) {
+      parseFalhou = e instanceof Error ? e.message : String(e);
+      return null;
+    }
+  })();
+  if (meta) {
+    log(
+      'ingest',
+      `cliente=${meta.cliente} tipo=${meta.tipo} orientacao=${meta.orientacao}`,
+    );
+  } else {
+    log(
+      'ingest',
+      ehCarrossel
+        ? 'carrossel: cérebro vai inferir cliente a partir das imagens.'
+        : `nome fora do padrão (${parseFalhou ?? 'erro'}) — cérebro vai inferir cliente/tipo.`,
+    );
   }
-  log(
-    'ingest',
-    `cliente=${meta.cliente} tipo=${meta.tipo} orientacao=${meta.orientacao}`,
-  );
 
   const ehFoto = ehImagem(caminho);
 
@@ -231,8 +248,29 @@ async function main() {
     log('ingest', `${frames.length} frames extraídos.`);
   }
 
-  log('brain', 'chamando Claude (Sonnet 4.6) com o(s) frame(s) + meta...');
-  const planoBruto = await gerarPlano(meta, frames);
+  log('brain', 'chamando Claude (Sonnet 4.6) com o(s) frame(s)...');
+  let planoBruto;
+  if (meta) {
+    planoBruto = await gerarPlano(meta, frames);
+  } else {
+    // Inferência: cérebro chuta cliente/tipo a partir do nome de arquivo
+    // e do conteúdo. Pra carrossel: força tipo depois.
+    const orientacao = ehFoto
+      ? await detectarOrientacaoImagem(caminho)
+      : 'h';
+    planoBruto = await gerarPlanoComInferencia(
+      {
+        pastaPaiNome: path.basename(path.dirname(caminho)),
+        caminhoPastas: path.dirname(caminho),
+        nomeArquivo: path.basename(caminho),
+        orientacao,
+        caminhoLocal: caminho,
+      },
+      frames,
+    );
+    if (ehCarrossel) planoBruto.meta.tipo = 'carrossel';
+    log('brain', `inferido: cliente=${planoBruto.meta.cliente} tipo=${planoBruto.meta.tipo} orientacao=${planoBruto.meta.orientacao}`);
+  }
   log('brain', `redes escolhidas: ${planoBruto.redes.join(', ')}`);
   log('brain', `conteudoAI=${planoBruto.conteudoAI}`);
   log('brain', `resumo: ${planoBruto.resumoInterno}`);

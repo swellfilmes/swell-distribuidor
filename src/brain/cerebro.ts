@@ -55,7 +55,7 @@ Responda APENAS com um objeto JSON válido neste formato exato (sem markdown, se
 
 const respostaSchemaComMeta = z.object({
   cliente: z.string().min(1),
-  tipo: z.enum(['aftermovie', 'reel', 'bastidor', 'institucional', 'minidoc', 'ai']),
+  tipo: z.enum(['aftermovie', 'reel', 'bastidor', 'institucional', 'minidoc', 'ai', 'foto', 'carrossel']),
   orientacao: z.enum(['h', 'v']),
   redes: z.array(z.enum(['youtube', 'instagram', 'tiktok', 'linkedin'])).min(1),
   conteudoAI: z.boolean(),
