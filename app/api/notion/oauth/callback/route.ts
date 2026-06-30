@@ -32,7 +32,7 @@ function htmlErro(titulo: string, detalhe: string): NextResponse {
 <body style="font-family:system-ui;padding:32px;max-width:560px;margin:auto">
 <h1 style="color:#b00020">${safe(titulo)}</h1>
 <p>${safe(detalhe)}</p>
-<p><a href="/app/admin">← Voltar pro admin</a></p>
+<p><a href="/app/onboarding">← Voltar pro wizard de onboarding</a></p>
 </body></html>`;
   return new NextResponse(html, { status: 400, headers: { 'content-type': 'text/html; charset=utf-8' } });
 }
@@ -153,8 +153,10 @@ export async function GET(req: Request) {
 
   invalidarCache(empresa.slug);
 
-  // Sucesso — redirect pro admin com flag
-  const destino = new URL('/app/admin/empresas/' + empresaId, url.origin);
+  // Sucesso — redirect pro wizard de onboarding (ambos admin e testador acessam).
+  // StepNotion.tsx lê notion=conectado&workspace=X pra mostrar banner verde.
+  const destino = new URL('/app/onboarding', url.origin);
+  destino.searchParams.set('empresa', String(empresaId));
   destino.searchParams.set('notion', 'conectado');
   destino.searchParams.set('workspace', tokenJson.workspace_name ?? '');
   return NextResponse.redirect(destino.toString());

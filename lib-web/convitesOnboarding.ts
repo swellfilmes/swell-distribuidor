@@ -9,6 +9,11 @@ import {
 } from '@/src/db/schema';
 import { criarEmpresa } from './adminEmpresas';
 
+function ehErroSlugDuplicado(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  return /duplicate key|unique constraint|empresas_slug/i.test(msg);
+}
+
 export interface ConviteOnboardingResumo {
   id: number;
   token: string;
@@ -104,7 +109,12 @@ export async function validarConviteOnboarding(
 
 /**
  * Consome o convite: cria a empresa solicitada, marca o user como owner dela,
- * e marca o convite como usado. Atômico: se qualquer passo falhar, nada commita.
+ * e marca o convite como usado.
+ *
+ * Race-free: o 1º UPDATE reserva o token atomicamente (WHERE consumido_em IS NULL).
+ * Se duas requests entram juntas, só uma consegue UPDATE com affectedRows > 0;
+ * a outra recebe "já consumido". Se a criação da empresa falhar depois (slug
+ * duplicado, etc), reverte o token pro estado anterior pro testador tentar de novo.
  */
 export async function consumirConviteOnboarding(
   token: string,
@@ -112,49 +122,64 @@ export async function consumirConviteOnboarding(
   nomeEmpresa: string,
   slug: string,
 ): Promise<{ empresaId: number; slug: string }> {
-  const valida = await validarConviteOnboarding(token);
-  if (!valida.ok) {
-    if (valida.motivo === 'nao-encontrado') {
-      throw new Error('Convite não encontrado.');
-    }
-    throw new Error('Esse convite já foi usado por outra pessoa.');
+  // 1. Reserva o token (UPDATE atomic — só 1 request ganha).
+  const reservado = await db
+    .update(convitesOnboarding)
+    .set({ consumidoEm: new Date(), consumidoPor: userId })
+    .where(
+      and(
+        eq(convitesOnboarding.token, token),
+        isNull(convitesOnboarding.consumidoEm),
+      ),
+    )
+    .returning({ id: convitesOnboarding.id });
+  if (reservado.length === 0) {
+    // Pode ser: token não existe OU já foi consumido por outra request paralela.
+    const existe = await db
+      .select({ id: convitesOnboarding.id })
+      .from(convitesOnboarding)
+      .where(eq(convitesOnboarding.token, token))
+      .limit(1);
+    if (existe.length === 0) throw new Error('Convite não encontrado.');
+    throw new Error('Esse convite já foi usado por outra pessoa (ou por você num clique anterior).');
   }
 
-  // Garante que user existe no nosso `users` (o callback do Clerk normalmente
-  // já garante via syncUsuarioAtual, mas re-checamos por segurança).
+  // 2. Garante user no banco (normalmente já existe via syncUsuarioAtual).
   const u = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).limit(1);
   if (u.length === 0) {
+    // Rollback: libera o token de novo.
+    await db
+      .update(convitesOnboarding)
+      .set({ consumidoEm: null, consumidoPor: null })
+      .where(eq(convitesOnboarding.token, token));
     throw new Error('Usuário não encontrado — faça login antes.');
   }
 
-  // Verifica que slug não colide.
-  const colisao = await db
-    .select({ id: empresas.id })
-    .from(empresas)
-    .where(eq(empresas.slug, slug))
-    .limit(1);
-  if (colisao.length > 0) {
-    throw new Error(`Slug "${slug}" já está em uso. Escolha outro.`);
+  // 3. Cria empresa. Se slug duplicado (constraint unique), rollback do token.
+  let empresaId: number;
+  try {
+    const r = await criarEmpresa({ nome: nomeEmpresa, slug });
+    empresaId = r.id;
+  } catch (err) {
+    await db
+      .update(convitesOnboarding)
+      .set({ consumidoEm: null, consumidoPor: null })
+      .where(eq(convitesOnboarding.token, token));
+    if (ehErroSlugDuplicado(err)) {
+      throw new Error(`Slug "${slug}" já está em uso. Escolha outro.`);
+    }
+    throw err;
   }
 
-  // Cria empresa (pendente, sem Notion/Zernio ainda).
-  const { id: empresaId } = await criarEmpresa({ nome: nomeEmpresa, slug });
-
-  // User vira owner.
+  // 4. Marca empresa criada no convite + cria membership owner.
+  await db
+    .update(convitesOnboarding)
+    .set({ empresaCriadaId: empresaId })
+    .where(eq(convitesOnboarding.token, token));
   await db
     .insert(empresaUsers)
     .values({ empresaId, userId, role: 'owner' })
     .onConflictDoNothing();
-
-  // Marca convite consumido.
-  await db
-    .update(convitesOnboarding)
-    .set({
-      consumidoEm: new Date(),
-      consumidoPor: userId,
-      empresaCriadaId: empresaId,
-    })
-    .where(eq(convitesOnboarding.token, token));
 
   return { empresaId, slug };
 }

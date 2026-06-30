@@ -5,6 +5,7 @@ import { db } from '@/src/db';
 import { empresas, tenantSecrets } from '@/src/db/schema';
 import { cifrar } from '@/src/db/encryption';
 import { invalidarCache } from '@/src/db/tenantConfig';
+import { comRetryDb } from '@/src/db/retry';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,13 +63,22 @@ export async function POST(
     return NextResponse.json({ error: 'Nenhum campo pra atualizar.' }, { status: 400 });
   }
 
-  await db.update(tenantSecrets).set(set).where(eq(tenantSecrets.empresaId, empresaId));
+  try {
+    await comRetryDb(() =>
+      db.update(tenantSecrets).set(set).where(eq(tenantSecrets.empresaId, empresaId)),
+    );
 
-  // Invalida cache (loadTenantConfig).
-  const slug = (
-    await db.select({ slug: empresas.slug }).from(empresas).where(eq(empresas.id, empresaId)).limit(1)
-  )[0]?.slug;
-  if (slug) invalidarCache(slug);
+    // Invalida cache (loadTenantConfig).
+    const lookup = await comRetryDb(() =>
+      db.select({ slug: empresas.slug }).from(empresas).where(eq(empresas.id, empresaId)).limit(1),
+    );
+    const slug = lookup[0]?.slug;
+    if (slug) invalidarCache(slug);
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const status = /Too Many|429|rate|too many connections/i.test(msg) ? 503 : 500;
+    return NextResponse.json({ error: msg }, { status });
+  }
 }

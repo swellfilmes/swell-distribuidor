@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const MAX_CONCORRENTES = 2;
+const TAMANHO_MAX_BYTES = 500 * 1024 * 1024; // 500MB — limite pra Vercel function presign + R2 PUT
+const POLLING_TIMEOUT_MS = 10 * 60 * 1000; // 10 min — se job não evoluir, mostra aviso
 
 type Etapa =
   | { tipo: 'fila'; pct: 0 }
@@ -249,13 +251,22 @@ export function Uploader() {
 
   function adicionarArquivos(arquivos: FileList | File[]) {
     const lista = Array.from(arquivos).filter(ehMidia);
+    // Bloqueia arquivos acima de TAMANHO_MAX_BYTES com aviso amigável.
+    const grandes = lista.filter((a) => a.size > TAMANHO_MAX_BYTES);
+    if (grandes.length > 0) {
+      const nomes = grandes.map((a) => `${a.name} (${(a.size / 1024 / 1024).toFixed(0)}MB)`).join(', ');
+      alert(
+        `Arquivo(s) acima de ${(TAMANHO_MAX_BYTES / 1024 / 1024).toFixed(0)}MB foram ignorados:\n\n${nomes}\n\nDica: comprime vídeos longos antes de subir (Handbrake, ffmpeg).`,
+      );
+    }
+    const aceitos = lista.filter((a) => a.size <= TAMANHO_MAX_BYTES);
     const existentes = new Set(itensRef.current.map((it) => it.key));
 
     // Separa em imagens vs vídeos. Imagens dropped no mesmo batch agrupam
     // como UM carrossel (se >=2). Vídeos sempre viram itens individuais.
     const imagens: File[] = [];
     const novos: ItemUpload[] = [];
-    for (const arquivo of lista) {
+    for (const arquivo of aceitos) {
       if (ehImagemFile(arquivo)) {
         imagens.push(arquivo);
       } else {
@@ -318,11 +329,33 @@ export function Uploader() {
   useEffect(() => {
     if (jobIdsAtivos.length === 0) return;
     let cancelado = false;
+    const inicioPolling = new Map<string, number>();
+    for (const { key } of jobIdsAtivos) {
+      if (!inicioPolling.has(key)) inicioPolling.set(key, Date.now());
+    }
 
     const tick = async () => {
       if (cancelado) return;
       await Promise.all(
         jobIdsAtivos.map(async ({ key, jobId }) => {
+          // Timeout client-side: se job ficou >10min sem virar done/failed,
+          // marca como erro pra testador não esperar pra sempre.
+          const inicio = inicioPolling.get(key) ?? Date.now();
+          if (Date.now() - inicio > POLLING_TIMEOUT_MS) {
+            patchItem(key, (it) =>
+              it.etapa.tipo === 'concluido' || it.etapa.tipo === 'erro'
+                ? it
+                : {
+                    ...it,
+                    etapa: {
+                      tipo: 'erro',
+                      jobId,
+                      erro: 'Demorou demais (>10min). O worker pode ter caído. Verifica o Railway ou tenta de novo.',
+                    },
+                  },
+            );
+            return;
+          }
           try {
             const resp = await fetch(`/api/jobs/${jobId}`, { cache: 'no-store' });
             if (!resp.ok) return;

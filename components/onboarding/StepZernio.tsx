@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { ZernioEditor } from '../ZernioEditor';
 
 interface Props {
@@ -21,6 +22,9 @@ export function StepZernio({
   zernioLinkedinAccountId,
   onAvancar,
 }: Props) {
+  // Espelho local pra liberar "Próximo" assim que salvar (router.refresh é async).
+  const [salvouAgora, setSalvouAgora] = useState(false);
+  const prontoEfetivo = zernioPronto || salvouAgora;
   return (
     <div className="space-y-6">
       <div>
@@ -40,9 +44,10 @@ export function StepZernio({
         zernioTiktokAccountId={zernioTiktokAccountId}
         zernioLinkedinAccountId={zernioLinkedinAccountId}
         mostrarInstrucoes
+        onSalvouComSucesso={() => setSalvouAgora(true)}
       />
 
-      {zernioPronto && (
+      {prontoEfetivo && (
         <button
           onClick={onAvancar}
           className="w-full rounded-md bg-ink px-4 py-3 text-sm font-medium text-cream hover:opacity-90"

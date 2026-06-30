@@ -25,9 +25,23 @@ export interface TenantConfig {
 export function temNotionConectado(t: TenantConfig): boolean {
   return Boolean(t.notionApiKey && t.notionDbId);
 }
+
+/**
+ * Zernio considera-se "conectado" quando há API key + pelo menos uma rede com
+ * accountId preenchido. Sem accountId nenhum, o publicarTudo vai ignorar todas
+ * as redes e o agendamento falha silenciosamente — pior UX que ainda em onboarding.
+ */
 export function temZernioConectado(t: TenantConfig): boolean {
-  return Boolean(t.zernioApiKey);
+  const temApiKey = Boolean(t.zernioApiKey);
+  const temAlgumaRede = Boolean(
+    t.zernioInstagramAccountId ||
+      t.zernioYoutubeAccountId ||
+      t.zernioTiktokAccountId ||
+      t.zernioLinkedinAccountId,
+  );
+  return temApiKey && temAlgumaRede;
 }
+
 export function integracoesCompletas(t: TenantConfig): boolean {
   return temNotionConectado(t) && temZernioConectado(t);
 }

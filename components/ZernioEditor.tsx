@@ -13,6 +13,9 @@ interface Props {
   /** Mostra o cabeçalho com instruções (modo wizard). Em configurações,
    * passamos false porque o usuário já conhece o fluxo. */
   mostrarInstrucoes?: boolean;
+  /** Callback opcional pro pai reagir ao salvar com sucesso (ex: liberar
+   * botão "Próximo" no wizard sem precisar de router.refresh). */
+  onSalvouComSucesso?: () => void;
 }
 
 export function ZernioEditor({
@@ -23,6 +26,7 @@ export function ZernioEditor({
   zernioTiktokAccountId,
   zernioLinkedinAccountId,
   mostrarInstrucoes = true,
+  onSalvouComSucesso,
 }: Props) {
   const router = useRouter();
   const [apiKey, setApiKey] = useState('');
@@ -33,11 +37,25 @@ export function ZernioEditor({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  // Estado local pra refletir conexão pronta sem esperar router.refresh propagar.
+  const temAlgumaRedeAtual = Boolean(yt || ig || tt || li);
+  const [prontoLocal, setProntoLocal] = useState(zernioPronto);
+  const prontoEfetivo = prontoLocal || zernioPronto;
 
   async function salvar() {
     setSalvando(true);
     setErro(null);
     setOk(false);
+    if (!apiKey && !zernioPronto) {
+      setErro('Cola a API Key do Zernio antes de salvar.');
+      setSalvando(false);
+      return;
+    }
+    if (!temAlgumaRedeAtual) {
+      setErro('Preencha pelo menos um Account ID (Instagram, YouTube, TikTok ou LinkedIn) — sem isso o sistema não publica em nenhuma rede.');
+      setSalvando(false);
+      return;
+    }
     try {
       const resp = await fetch(`/api/empresas/${empresaId}/zernio`, {
         method: 'POST',
@@ -54,6 +72,8 @@ export function ZernioEditor({
       if (!resp.ok) throw new Error(data.error ?? `HTTP ${resp.status}`);
       setOk(true);
       setApiKey('');
+      setProntoLocal(true);
+      onSalvouComSucesso?.();
       router.refresh();
     } catch (err) {
       setErro(err instanceof Error ? err.message : String(err));
@@ -99,7 +119,7 @@ export function ZernioEditor({
         </details>
       )}
 
-      {zernioPronto && (
+      {prontoEfetivo && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm">
           <div className="flex items-center gap-2 font-medium text-emerald-900">
             <span className="text-base">✓</span> Zernio já conectado
