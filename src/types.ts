@@ -49,6 +49,12 @@ export interface PlanoPublicacao {
   thumbnailUrl?: string;
   /** Última `scheduledFor` (ISO) que mandamos pro Zernio. Comparar com Notion.DataPublicacao pra detectar mudança de data feita pelo humano. */
   dataAgendadaEmZernio?: string;
+  /**
+   * Carrossel (tipo='carrossel'): URLs das mídias EXTRAS (a 1ª mídia vai em
+   * `midia.urlPublica`). Cada uma vira um mediaItem no Zernio na ordem que
+   * aparecer aqui. Vazio/undefined pra single image/vídeo.
+   */
+  mediasExtras?: Array<{ urlPublica: string; chaveR2: string }>;
 }
 
 export interface MidiaHospedada {

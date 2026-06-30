@@ -185,14 +185,33 @@ async function main() {
     return;
   }
 
-  const caminho = path.resolve(arg);
-  if (!existsSync(caminho)) {
-    console.error(`❌ Arquivo não encontrado: ${caminho}`);
+  // Carrossel: aceita N arquivos como args (`distribuir foto1.jpg foto2.jpg ...`).
+  // Se 1 só → single video/imagem. Se >=2 e todas imagens → carrossel.
+  const caminhosArgs = argv.filter((a) => existsSync(path.resolve(a)));
+  const caminhos = caminhosArgs.length > 0 ? caminhosArgs.map((c) => path.resolve(c)) : [path.resolve(arg)];
+  if (caminhos.length === 0 || !existsSync(caminhos[0])) {
+    console.error(`❌ Arquivo não encontrado: ${arg}`);
     process.exit(1);
   }
 
-  log('ingest', `lendo nome do arquivo: ${path.basename(caminho)}`);
+  const caminho = caminhos[0];
+  const caminhosExtras = caminhos.slice(1);
+  const ehCarrossel = caminhosExtras.length > 0;
+  if (ehCarrossel) {
+    const todosImagens = caminhos.every(ehImagem);
+    if (!todosImagens) {
+      console.error('❌ Carrossel só aceita imagens (jpg/png/webp). Misturar com vídeo não é suportado.');
+      process.exit(1);
+    }
+    log('ingest', `carrossel com ${caminhos.length} imagens detectado.`);
+  }
+
+  log('ingest', `lendo nome do arquivo principal: ${path.basename(caminho)}`);
   const meta = parseNome(caminho);
+  // Forçar tipo='carrossel' quando vier multi-arquivo (sobrescreve o que tava no nome).
+  if (ehCarrossel) {
+    meta.tipo = 'carrossel';
+  }
   log(
     'ingest',
     `cliente=${meta.cliente} tipo=${meta.tipo} orientacao=${meta.orientacao}`,
@@ -201,11 +220,11 @@ async function main() {
   const ehFoto = ehImagem(caminho);
 
   // Pipeline branching: vídeo extrai 6 frames + roda thumbnail agent.
-  // Imagem (foto) é o próprio frame, pula extração e thumbnail (ela é a thumb).
+  // Imagem/carrossel é o próprio frame; pula extração e thumbnail.
   let frames;
   if (ehFoto) {
-    log('ingest', 'arquivo é imagem — pulo extração de frames.');
-    frames = [await lerImagemComoFrame(caminho)];
+    log('ingest', ehCarrossel ? `carrossel: lendo ${caminhos.length} imagens.` : 'arquivo é imagem — pulo extração de frames.');
+    frames = await Promise.all(caminhos.map((c) => lerImagemComoFrame(c)));
   } else {
     log('ingest', 'extraindo 6 frames do vídeo...');
     frames = await extrairFrames(caminho, 6);
@@ -235,9 +254,19 @@ async function main() {
     log('thumb', 'foto: imagem é a própria thumb, pulo agent de thumbnail.');
   }
 
-  log('storage', `subindo ${ehFoto ? 'imagem' : 'vídeo'} pro R2...`);
+  log('storage', `subindo ${ehFoto ? (ehCarrossel ? `${caminhos.length} imagens` : 'imagem') : 'vídeo'} pro R2...`);
   const midia = await subirParaR2(tenant, caminho);
   log('storage', `URL pública: ${midia.urlPublica}`);
+  if (ehCarrossel) {
+    const extras = await Promise.all(
+      caminhosExtras.map(async (c) => {
+        const m = await subirParaR2(tenant, c);
+        log('storage', `  + ${path.basename(c)} → ${m.urlPublica}`);
+        return { urlPublica: m.urlPublica, chaveR2: m.chaveR2 };
+      }),
+    );
+    plano = { ...plano, mediasExtras: extras };
+  }
 
   log('approval', 'criando linha no Notion...');
   const linha = await criarLinhaAprovacao(tenant, plano, midia);

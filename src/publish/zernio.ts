@@ -197,30 +197,37 @@ export async function publicarTudo(
 
   try {
     // Categoria deriva do tipo do plano (foto/carrossel → imagem; resto → video).
-    // mimeType deduzido pela URL do R2 (que o subirParaR2 já gravou correto).
+    // Pra carrossel, monta N mediaItems (1 principal + plano.mediasExtras).
     const categoria = categoriaDoTipo(plano.meta.tipo);
     const ehImagem = categoria === 'imagem';
-    const mimeFromUrl = (() => {
-      const url = midia.urlPublica.toLowerCase();
-      if (url.endsWith('.png')) return 'image/png';
-      if (url.endsWith('.webp')) return 'image/webp';
-      if (url.endsWith('.jpg') || url.endsWith('.jpeg')) return 'image/jpeg';
+    const mimeFromUrl = (url: string): string => {
+      const u = url.toLowerCase();
+      if (u.endsWith('.png')) return 'image/png';
+      if (u.endsWith('.webp')) return 'image/webp';
+      if (u.endsWith('.jpg') || u.endsWith('.jpeg')) return 'image/jpeg';
       return 'video/mp4';
-    })();
-    const mediaItem: Record<string, unknown> = {
-      type: ehImagem ? 'image' : 'video',
-      url: midia.urlPublica,
-      mimeType: mimeFromUrl,
     };
-    // Thumbnail só faz sentido pra vídeo. Imagem é a própria capa.
-    if (!ehImagem && plano.thumbnailUrl) {
-      mediaItem.thumbnail = plano.thumbnailUrl;
-      mediaItem.instagramThumbnail = plano.thumbnailUrl;
+    function montarItem(url: string): Record<string, unknown> {
+      const item: Record<string, unknown> = {
+        type: ehImagem ? 'image' : 'video',
+        url,
+        mimeType: mimeFromUrl(url),
+      };
+      if (!ehImagem && plano.thumbnailUrl) {
+        item.thumbnail = plano.thumbnailUrl;
+        item.instagramThumbnail = plano.thumbnailUrl;
+      }
+      return item;
+    }
+
+    const mediaItems: Array<Record<string, unknown>> = [montarItem(midia.urlPublica)];
+    for (const extra of plano.mediasExtras ?? []) {
+      mediaItems.push(montarItem(extra.urlPublica));
     }
 
     const body: Record<string, unknown> = {
       content: conteudoBase,
-      mediaItems: [mediaItem],
+      mediaItems,
       platforms,
     };
 

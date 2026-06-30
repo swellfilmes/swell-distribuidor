@@ -229,29 +229,36 @@ export async function atualizarZernioAgendadosAte(
       body.timezone = 'America/Bahia';
     }
 
-    // Atualiza mediaItem mantendo o tipo correto (imagem vs vídeo) baseado
-    // no plano. Sem isso, mudar a copy de um post-foto reescreveria o
-    // mediaItem como vídeo no Zernio. Pra imagem, thumbnail não faz sentido.
+    // Atualiza mediaItems mantendo o tipo correto (imagem vs vídeo) baseado
+    // no plano. Carrossel injeta N mediaItems (principal + planoFinal.mediasExtras).
     const categoria = categoriaDoTipo(planoFinal.meta.tipo);
     const ehImagem = categoria === 'imagem';
-    const mimeFromUrl = (() => {
-      const u = linha.videoUrl.toLowerCase();
+    const mimeFromUrl = (url: string): string => {
+      const u = url.toLowerCase();
       if (u.endsWith('.png')) return 'image/png';
       if (u.endsWith('.webp')) return 'image/webp';
       if (u.endsWith('.jpg') || u.endsWith('.jpeg')) return 'image/jpeg';
       return 'video/mp4';
-    })();
-    if (ehImagem || planoFinal.thumbnailUrl) {
+    };
+    function montarItem(url: string): Record<string, unknown> {
       const item: Record<string, unknown> = {
         type: ehImagem ? 'image' : 'video',
-        url: linha.videoUrl,
-        mimeType: mimeFromUrl,
+        url,
+        mimeType: mimeFromUrl(url),
       };
       if (!ehImagem && planoFinal.thumbnailUrl) {
         item.thumbnail = planoFinal.thumbnailUrl;
         item.instagramThumbnail = planoFinal.thumbnailUrl;
       }
-      body.mediaItems = [item];
+      return item;
+    }
+    const temCarrossel = (planoFinal.mediasExtras?.length ?? 0) > 0;
+    if (ehImagem || planoFinal.thumbnailUrl || temCarrossel) {
+      const items = [montarItem(linha.videoUrl)];
+      for (const extra of planoFinal.mediasExtras ?? []) {
+        items.push(montarItem(extra.urlPublica));
+      }
+      body.mediaItems = items;
     }
 
     try {
