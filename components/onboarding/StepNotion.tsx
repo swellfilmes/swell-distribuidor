@@ -44,20 +44,36 @@ export function StepNotion({ empresaId, notionPronto, notionDbId, onAvancar }: P
             <div className="mb-2 text-sm font-medium">O que vai acontecer:</div>
             <ol className="space-y-1.5 text-xs text-fg-muted/70">
               <li>1. Clica no botão abaixo</li>
-              <li>2. Notion abre um popup pedindo qual página compartilhar</li>
               <li>
-                3. Você escolhe uma página vazia (cria antes: <em>"Distribuição
-                Swell"</em> ou nome que quiser)
+                2. O Notion vai abrir um popup pedindo pra você{' '}
+                <b className="text-fg">selecionar as páginas</b> que essa integração pode acessar
               </li>
-              <li>4. Volta aqui e a database aparece sozinha lá no Notion</li>
+              <li>
+                3. <b className="text-fg">Não precisa criar página antes</b> — no
+                próprio popup do Notion, clique em{' '}
+                <span className="inline-block rounded bg-fg-muted/15 px-1.5 py-0.5 font-medium text-fg">
+                  + Add page
+                </span>{' '}
+                lá em cima pra criar uma página vazia na hora
+              </li>
+              <li>
+                4. Confirma e volta pra cá — a gente cria a database{' '}
+                <b className="text-fg">automaticamente</b> dentro da página escolhida
+              </li>
             </ol>
+          </div>
+
+          <div className="rounded-lg border border-primary/25 bg-primary/[0.05] p-3 text-[11px] text-fg-muted">
+            💡 Dica: se você <b className="text-fg">já</b> tem uma página tipo "Marketing" ou
+            "Conteúdo" no seu workspace, dá pra selecionar ela também — a database vira uma
+            sub-página lá dentro.
           </div>
 
           <a
             href={`/api/notion/oauth/start?empresaId=${empresaId}`}
             className="block w-full rounded-md bg-primary px-4 py-3 text-center text-sm font-medium text-app hover:opacity-90"
           >
-            🔌 Conectar Notion via OAuth
+            Conectar Notion
           </a>
 
           <div className="text-[11px] text-fg-muted/45">
