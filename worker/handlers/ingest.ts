@@ -124,14 +124,14 @@ export async function processarIngest(
         : [framePrincipal];
 
     // Transcrição do áudio (best-effort, nunca bloqueia o pipeline).
-    // Só faz sentido em vídeo — foto/carrossel não tem áudio.
-    // Streaming (URL direta pro ffmpeg) NÃO transcrve — o transcreverVideo
-    // exige arquivo local; se não baixamos o vídeo, pulamos.
+    // Passa `inputFfmpeg` (arquivo local se baixamos, ou URL R2 direto se
+    // é streaming) — o ffmpeg dentro de transcreverVideo aceita ambos e
+    // no modo URL só baixa a trilha de áudio (bem menor que o vídeo).
     let transcricao: Transcricao | null = null;
-    if (globalConfig.GROQ_API_KEY && !ehFoto && baixado && ehVideo(baixado.caminho)) {
+    if (globalConfig.GROQ_API_KEY && !ehFoto && !ehCarrossel) {
       try {
         log('transcrição: extraindo áudio + Groq Whisper turbo...');
-        transcricao = await transcreverVideo(baixado.caminho, globalConfig.GROQ_API_KEY);
+        transcricao = await transcreverVideo(inputFfmpeg, globalConfig.GROQ_API_KEY);
         if (transcricao) {
           const previa = transcricao.texto.slice(0, 90).replace(/\n/g, ' ');
           log(`transcrição: "${previa}${transcricao.texto.length > 90 ? '…' : ''}"`);
@@ -139,7 +139,6 @@ export async function processarIngest(
           log('transcrição: sem áudio detectado ou vídeo grande demais.');
         }
       } catch (err) {
-        // Belt-and-suspenders — transcreverVideo já engole tudo, mas garanto aqui.
         log(`transcrição falhou (ignorando): ${err instanceof Error ? err.message : err}`);
       }
     }
