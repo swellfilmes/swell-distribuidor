@@ -173,7 +173,20 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
                     descricao={c.descricao}
                     hashtags={c.hashtags}
                     pendente={pendente}
-                    onSalvar={(rede, novaDescricao, novasHashtags) =>
+                    onSalvar={(rede, novaDescricao, novasHashtags) => {
+                      // Update otimista: reconstroi o plano com a nova copy
+                      // dessa rede. Sem isso, o CopyRedeEditor sai do modo
+                      // edição, recebe a descrição antiga via props e o
+                      // useEffect [descricao, hashtags] resetava o texto
+                      // local pra versão antiga — parecia que "voltou".
+                      const planoAtual = post.plano;
+                      if (!planoAtual) return;
+                      const novaCopyLista = planoAtual.copy.map((item) =>
+                        item.rede === rede
+                          ? { ...item, descricao: novaDescricao, hashtags: novasHashtags }
+                          : item,
+                      );
+                      const novoPlano = { ...planoAtual, copy: novaCopyLista };
                       onSalvar(
                         {
                           copy: {
@@ -183,9 +196,9 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
                             },
                           },
                         },
-                        {},
-                      )
-                    }
+                        { plano: novoPlano },
+                      );
+                    }}
                   />
                 ))}
               </div>
