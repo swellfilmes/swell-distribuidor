@@ -33,7 +33,9 @@ const SYSTEM_PROMPT = `Você é o estrategista de distribuição social da Swell
 
 Tom: cinematográfico, premium, direto. Nunca clichê de marketing. Sempre creditar a equipe quando couber e mencionar o cliente pelo nome se conhecido.
 
-Você vai receber frames extraídos do vídeo (6 frames distribuídos pela duração) OU 1+ imagem(ns) direta(s) quando o conteúdo for foto/carrossel. Use o que VOCÊ VÊ pra escrever uma copy específica e fiel ao conteúdo: ambiente, pessoas, equipamento, marcas visíveis, paleta de cores, vibe, contexto do evento. Não invente o que não está na imagem. Quando algo for óbvio (palco, multidão, indústria, natureza, esporte), nomeie. Quando for ambíguo, fale em termos sensoriais (luz, ritmo, escala) sem chutar fato.
+Você vai receber frames extraídos do vídeo (por detecção de cena ou 6 frames uniformes) OU 1+ imagem(ns) direta(s) quando o conteúdo for foto/carrossel. Use o que VOCÊ VÊ pra escrever uma copy específica e fiel ao conteúdo: ambiente, pessoas, equipamento, marcas visíveis, paleta de cores, vibe, contexto do evento. Não invente o que não está na imagem. Quando algo for óbvio (palco, multidão, indústria, natureza, esporte), nomeie. Quando for ambíguo, fale em termos sensoriais (luz, ritmo, escala) sem chutar fato.
+
+Quando fornecida, use a transcrição do áudio pra ancorar a copy no que realmente foi dito no vídeo (depoimentos, narração, entrevistas). Cite frases específicas quando forem fortes.
 
 Regras de roteamento (siga à risca):
 - orientacao "v" + tipo (reel, bastidor, ai): Instagram, YouTube (Shorts), TikTok.
@@ -43,6 +45,8 @@ Regras de roteamento (siga à risca):
 - tipo "ai": ligar conteudoAI=true SEMPRE. Demais tipos: conteudoAI=false.
 
 Adapte a copy por rede: LinkedIn mais formal e contextual; Instagram/TikTok mais direto e visual; YouTube com título e descrição mais completos.
+
+PROIBIDO usar traço em (—) ou traço médio (–) como separador visual dentro das legendas. Separe parágrafos apenas com quebra de linha (\n). Nunca use exclamação forçada.
 
 Responda APENAS com um objeto JSON válido neste formato exato (sem markdown, sem texto antes/depois):
 {
@@ -91,7 +95,7 @@ Tipo (escolha um):
 - foto: imagem única (jpg/png/webp). Você recebe 1 imagem em vez de 6 frames.
 - carrossel: múltiplas imagens em sequência (Instagram/LinkedIn). Você recebe N imagens.
 
-Tom: cinematográfico, premium, direto. Nunca clichê de marketing. Cite o cliente, descreva o que VOCÊ VÊ nos frames/imagens, mencione equipe quando couber.
+Tom: cinematográfico, premium, direto. Nunca clichê de marketing. Cite o cliente, descreva o que VOCÊ VÊ nos frames/imagens, mencione equipe quando couber. Quando fornecida, use a transcrição do áudio pra ancorar a copy no que foi dito. PROIBIDO usar traço em (—) ou traço médio (–) como separador dentro das legendas. Separe parágrafos com quebra de linha (\n). Nunca use exclamação forçada.
 
 Regras de roteamento:
 - v + (reel, bastidor, ai): Instagram, YouTube, TikTok.
@@ -126,14 +130,19 @@ export interface ContextoInferencia {
 export async function gerarPlanoComInferencia(
   ctx: ContextoInferencia,
   frames: FrameExtraido[] = [],
+  transcricao?: { texto: string } | null,
 ): Promise<PlanoPublicacao> {
+  const textoTranscricao = transcricao?.texto?.trim()
+    ? `\nTranscrição do áudio do vídeo:\n"""\n${transcricao.texto.trim()}\n"""\n`
+    : '';
   const textoInicial =
     `Varredura do portfólio:\n` +
     `- pasta no Drive: ${ctx.pastaPaiNome}\n` +
     `- caminho completo: ${ctx.caminhoPastas}\n` +
     `- nome do arquivo: ${ctx.nomeArquivo}\n` +
-    `- orientação detectada (ffprobe): ${ctx.orientacao}\n\n` +
-    `Inferia o plano completo (cliente, tipo, copy) com base no contexto + nos ${frames.length} frames a seguir.`;
+    `- orientação detectada (ffprobe): ${ctx.orientacao}\n` +
+    textoTranscricao +
+    `\nInferia o plano completo (cliente, tipo, copy) com base no contexto + nos ${frames.length} frames a seguir.`;
 
   const userContent: Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam> = [
     { type: 'text', text: textoInicial },
@@ -208,13 +217,19 @@ export async function gerarPlanoComInferencia(
 export async function gerarPlano(
   meta: MetaArquivo,
   frames: FrameExtraido[] = [],
+  transcricao?: { texto: string } | null,
 ): Promise<PlanoPublicacao> {
+  const textoTranscricao = transcricao?.texto?.trim()
+    ? `\nTranscrição do áudio do vídeo:\n"""\n${transcricao.texto.trim()}\n"""\n`
+    : '';
   const textoInicial =
     `Vídeo recebido:\n` +
     `- cliente: ${meta.cliente}\n` +
     `- tipo: ${meta.tipo}\n` +
     `- orientacao: ${meta.orientacao}\n` +
-    `- nome do arquivo: ${meta.nomeArquivo}\n\n` +
+    `- nome do arquivo: ${meta.nomeArquivo}\n` +
+    textoTranscricao +
+    `\n` +
     (frames.length > 0
       ? `Seguem ${frames.length} frames extraídos do vídeo, em ordem temporal (do começo pro fim). Use o que você vê pra escrever a copy.`
       : `(Sem frames extraídos — escreva baseado só na meta.)`) +

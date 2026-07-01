@@ -5,7 +5,7 @@ import { notionDo } from '../lib/clients';
 import { gerarPlano } from '../brain/cerebro';
 import { polirCopy } from '../brain/redator';
 import { avaliarECorrigir } from '../brain/avaliador';
-import { extrairFrames } from '../ingest/extrairFrames';
+import { extrairFramesPorCena } from '../ingest/extrairFrames';
 import { chunkRichText } from '../lib/notionChunks';
 import { notionDbIdDo, type TenantConfig } from '../config';
 import type {
@@ -181,8 +181,8 @@ export async function repararCopyQuebradas(
       onLog(`  ⬇️  baixando do R2...`);
       const baixado = await baixarVideoTmp(l.videoUrl);
       try {
-        onLog(`  🔍  extraindo 6 frames...`);
-        const frames = await extrairFrames(baixado.caminho, 6);
+        onLog(`  🔍  extraindo frames por cena...`);
+        const frames = await extrairFramesPorCena(baixado.caminho, 12);
 
         const meta: MetaArquivo = {
           cliente: l.cliente,
@@ -195,11 +195,11 @@ export async function repararCopyQuebradas(
         onLog(`  🧠  cérebro (Sonnet 4.6) gerando copy...`);
         const planoBruto = await gerarPlano(meta, frames);
 
-        onLog(`  ✍️   redator polindo no tom Swell...`);
-        const planoPolido = await polirCopy(planoBruto, frames);
+        onLog(`  ✍️   redator polindo no tom da marca...`);
+        const planoPolido = await polirCopy(planoBruto, frames, tenant.tomVoz);
 
         onLog(`  🎯  avaliador-corretor pra 10/10...`);
-        const { planoMelhorado, avaliacoes } = await avaliarECorrigir(planoPolido);
+        const { planoMelhorado, avaliacoes } = await avaliarECorrigir(planoPolido, tenant.tomVoz);
         for (const a of avaliacoes) {
           onLog(`    ${a.rede}: ${a.notaAntes} → ${a.notaDepois}`);
         }

@@ -41,14 +41,16 @@ export interface ResultadoAvaliacao {
   avaliacoes: AvaliacaoCopy[];
 }
 
-const SYSTEM_PROMPT = `${TOM_DE_VOZ_SWELL}
+function buildSystemPrompt(tomVoz?: string): string {
+  const tom = tomVoz?.trim() || TOM_DE_VOZ_SWELL;
+  return `${tom}
 
 ---
 
-Você é o AVALIADOR-CORRETOR de captions da Swell. Vou te passar uma copy já feita por outro redator. Sua função:
+Você é o AVALIADOR-CORRETOR de captions da marca. Vou te passar uma copy já feita por outro redator. Sua função:
 
 1. PONTUAR cada caption de 0 a 10 considerando:
-   - Aderência ao tom Swell (vocabulário, estrutura, postura).
+   - Aderência ao tom da marca (vocabulário, estrutura, postura).
    - Capacidade de PARAR O SCROLL: o gancho prende? A frase é forte? Não tem cara de IA?
    - Clareza, ritmo, ausência de jargão.
    - Diferenciação por rede (LinkedIn ≠ TikTok).
@@ -79,9 +81,11 @@ Responda APENAS com JSON nesse formato:
     ...
   ]
 }`;
+}
 
 export async function avaliarECorrigir(
   plano: PlanoPublicacao,
+  tomVoz?: string,
 ): Promise<ResultadoAvaliacao> {
   const copyResumo = plano.copy
     .map((c) => {
@@ -103,7 +107,7 @@ export async function avaliarECorrigir(
       client.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 3072,
-        system: SYSTEM_PROMPT,
+        system: buildSystemPrompt(tomVoz),
         messages: [{ role: 'user', content: userMessage }],
       }),
     { nome: 'Anthropic.avaliador', timeoutMs: 60_000 },

@@ -27,11 +27,13 @@ const respostaSchema = z.object({
     .min(1),
 });
 
-const SYSTEM_PROMPT = `${TOM_DE_VOZ_SWELL}
+function buildSystemPrompt(tomVoz?: string): string {
+  const tom = tomVoz?.trim() || TOM_DE_VOZ_SWELL;
+  return `${tom}
 
 ---
 
-Você é o redator especialista da Swell. Outra IA escreveu uma copy bruta pra publicar um vídeo da Swell em redes sociais. Sua função: reescrever cada caption seguindo o guia de tom acima.
+Você é o redator especialista da marca. Outra IA escreveu uma copy bruta pra publicar um vídeo em redes sociais. Sua função: reescrever cada caption seguindo o guia de tom acima.
 
 REGRAS:
 - Mantenha o array de redes igual (mesma ordem, mesma quantidade).
@@ -40,8 +42,10 @@ REGRAS:
 - Diferencie por rede: LinkedIn pode desenvolver mais (autoridade B2B), Instagram/TikTok mais conciso e visual, YouTube com título cuidadoso (max 100 chars) e descrição mais completa.
 - Hashtags: máximo 5 por rede, evite clichês ("#aftermovie #produtoraaudiovisual"), prefira específicas ao cliente/setor.
 - Use o que você vê nos frames pra ancorar a copy em algo concreto.
-- Nunca diga "a Swell entregou", "produzimos com carinho", "foi incrível". Nunca use exclamação forçada.
+- Quando fornecida, use a transcrição do áudio pra ancorar a copy no que realmente foi dito no vídeo — depoimentos, narração, entrevistas.
+- Nunca use frases genéricas de auto-promoção ("entregamos", "produzimos com carinho", "foi incrível"). Nunca use exclamação forçada.
 - O resumoInterno fica como está (não toca).
+- PROIBIDO usar traço em (—) ou traço médio (–) dentro da legenda como separador visual entre frases ou blocos. Separe parágrafos apenas com quebra de linha (\n). Frases independentes ficam em parágrafos próprios, nunca ligadas por traço.
 
 Responda APENAS com JSON nesse formato:
 {
@@ -50,10 +54,13 @@ Responda APENAS com JSON nesse formato:
     ...
   ]
 }`;
+}
 
 export async function polirCopy(
   plano: PlanoPublicacao,
   frames: FrameExtraido[] = [],
+  tomVoz?: string,
+  transcricao?: { texto: string } | null,
 ): Promise<PlanoPublicacao> {
   const copyBrutaResumo = plano.copy
     .map((c) => {
@@ -63,13 +70,18 @@ export async function polirCopy(
     })
     .join('\n\n');
 
+  const textoTranscricao = transcricao?.texto?.trim()
+    ? `\nTranscrição do áudio do vídeo:\n"""\n${transcricao.texto.trim()}\n"""\n`
+    : '';
+
   const textoInicial =
     `Cliente: ${plano.meta.cliente}\n` +
     `Tipo: ${plano.meta.tipo}\n` +
     `Orientação: ${plano.meta.orientacao}\n` +
-    `Resumo visual: ${plano.resumoInterno}\n\n` +
-    `Copy BRUTA a reescrever:\n${copyBrutaResumo}\n\n` +
-    `Reescreva cada descrição seguindo o tom Swell. Responda em JSON conforme instruído.`;
+    `Resumo visual: ${plano.resumoInterno}\n` +
+    textoTranscricao +
+    `\nCopy BRUTA a reescrever:\n${copyBrutaResumo}\n\n` +
+    `Reescreva cada descrição seguindo o tom da marca. Responda em JSON conforme instruído.`;
 
   const userContent: Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam> = [
     { type: 'text', text: textoInicial },
@@ -86,7 +98,7 @@ export async function polirCopy(
       client.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 2048,
-        system: SYSTEM_PROMPT,
+        system: buildSystemPrompt(tomVoz),
         messages: [{ role: 'user', content: userContent }],
       }),
     { nome: 'Anthropic.redator', timeoutMs: 60_000 },

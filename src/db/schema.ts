@@ -20,6 +20,10 @@ export const empresas = pgTable('empresas', {
   nome: text('nome').notNull(),
   ativo: boolean('ativo').notNull().default(true),
   criadaEm: timestamp('criada_em', { withTimezone: true }).notNull().defaultNow(),
+  // Tom de voz personalizado da marca. Nullable — quando vazio, o redator/avaliador
+  // usam TOM_DE_VOZ_SWELL como fallback. Vive em `empresas` (não em `tenant_secrets`)
+  // porque não é segredo e a empresa sempre existe, mesmo em onboarding.
+  tomVoz: text('tom_voz'),
 });
 
 /**

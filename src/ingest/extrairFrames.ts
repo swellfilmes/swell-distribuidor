@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import { readFile, readdir, mkdtemp, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 
@@ -75,6 +75,75 @@ export async function extrairFrames(
       });
     }
 
+    return frames;
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Extrai frames com detecção de cena (`select=gt(scene,0.35)`). Só pega
+ * momentos onde há mudança visual relevante — melhor pra copy do que os 6
+ * frames uniformes tradicionais quando o vídeo tem cortes de edição.
+ *
+ * Trade-offs vs `extrairFrames`:
+ *  - Decodifica o vídeo INTEIRO numa passada (mais CPU/RAM), timeout dobrado.
+ *  - Quantidade final é desconhecida a priori — se passar de `maxFrames`,
+ *    reamostra pra pegar 1º + intermediários espaçados + último.
+ *  - Se detectar 0 cortes (drone contínuo, take único), CAI PRO FALLBACK
+ *    `extrairFrames(caminho, 6)`.
+ *
+ * `timestampSeg` NÃO é confiável nesse modo (`-vsync vfr` reordena) — fica 0.
+ * Isso não é usado pela copy nem pelo thumbnail HiRes (que extrai à parte).
+ */
+export async function extrairFramesPorCena(
+  caminhoVideo: string,
+  maxFrames = 12,
+): Promise<FrameExtraido[]> {
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'swell-cenas-'));
+  try {
+    await exec(
+      'ffmpeg',
+      [
+        '-i', caminhoVideo,
+        '-vf', "select='gt(scene,0.35)',scale=640:-1",
+        '-vsync', 'vfr',
+        '-q:v', '3',
+        '-y',
+        path.join(tmpDir, 'cena_%03d.jpg'),
+      ],
+      { timeout: FFMPEG_TIMEOUT_MS * 2 },
+    );
+
+    const arquivos = (await readdir(tmpDir))
+      .filter((f) => f.endsWith('.jpg'))
+      .sort();
+
+    if (arquivos.length === 0) {
+      // Vídeo sem cortes detectados → fallback uniforme.
+      return extrairFrames(caminhoVideo, 6);
+    }
+
+    // Se detectou frames demais, amostra: primeiro + N distribuídos + último.
+    let selecionados: string[];
+    if (arquivos.length <= maxFrames) {
+      selecionados = arquivos;
+    } else {
+      const step = (arquivos.length - 1) / (maxFrames - 1);
+      selecionados = Array.from({ length: maxFrames }, (_, i) =>
+        arquivos[Math.round(i * step)],
+      );
+    }
+
+    const frames: FrameExtraido[] = [];
+    for (const nome of selecionados) {
+      const buffer = await readFile(path.join(tmpDir, nome));
+      frames.push({
+        timestampSeg: 0,
+        base64: buffer.toString('base64'),
+        mediaType: 'image/jpeg' as const,
+      });
+    }
     return frames;
   } finally {
     await rm(tmpDir, { recursive: true, force: true });

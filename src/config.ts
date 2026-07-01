@@ -29,6 +29,11 @@ const globalSchema = z.object({
   ENCRYPTION_KEY: z
     .string()
     .min(1, 'ENCRYPTION_KEY ausente — gere com `openssl rand -base64 32`'),
+
+  // Groq API — transcrição de áudio dos vídeos com Whisper (turbo).
+  // OPCIONAL: sem chave, o pipeline continua rodando só com frames — a
+  // transcrição vira uma etapa best-effort, nunca bloqueia.
+  GROQ_API_KEY: z.string().optional(),
 });
 
 const parsed = globalSchema.safeParse(process.env);

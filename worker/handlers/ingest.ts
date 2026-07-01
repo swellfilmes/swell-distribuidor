@@ -2,11 +2,13 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import { baixarDoR2 } from '@/src/storage/r2';
-import { extrairFrames } from '@/src/ingest/extrairFrames';
-import { ehImagem } from '@/src/ingest/parseNome';
+import { extrairFrames, extrairFramesPorCena } from '@/src/ingest/extrairFrames';
+import { transcreverVideo, type Transcricao } from '@/src/ingest/transcricao';
+import { ehImagem, ehVideo } from '@/src/ingest/parseNome';
 import { lerImagemComoFrame } from '@/src/ingest/lerImagem';
 import { gerarPlanoComInferencia } from '@/src/brain/cerebro';
 import { polirCopy } from '@/src/brain/redator';
+import { globalConfig } from '@/src/config';
 import { gerarThumbnailDoVideoLocal } from '@/src/brain/gerarThumbnail';
 import { criarLinhaAprovacao } from '@/src/approval/notion';
 import { loadTenantConfigById } from '@/src/db/tenantConfig';
@@ -104,13 +106,13 @@ export async function processarIngest(
   }
 
   try {
-    log(`ffprobe pra orientação + ${ehCarrossel ? `lendo ${1 + (payload.extras?.length ?? 0)} imagens (carrossel)` : ehFoto ? 'lendo imagem (foto)' : 'extração de 6 frames'}...`);
+    log(`ffprobe pra orientação + ${ehCarrossel ? `lendo ${1 + (payload.extras?.length ?? 0)} imagens (carrossel)` : ehFoto ? 'lendo imagem (foto)' : 'extração de frames por cena'}...`);
     const inputPrincipal = baixado?.caminho ?? inputFfmpeg;
     const [orientacao, framePrincipal] = await Promise.all([
       detectarOrientacao(inputFfmpeg),
       ehFoto
         ? lerImagemComoFrame(inputPrincipal)
-        : extrairFrames(inputFfmpeg, 6).then((fs) => fs),
+        : extrairFramesPorCena(inputFfmpeg, 12).then((fs) => fs),
     ]);
     const frames = ehCarrossel
       ? [
@@ -120,6 +122,27 @@ export async function processarIngest(
       : Array.isArray(framePrincipal)
         ? framePrincipal
         : [framePrincipal];
+
+    // Transcrição do áudio (best-effort, nunca bloqueia o pipeline).
+    // Só faz sentido em vídeo — foto/carrossel não tem áudio.
+    // Streaming (URL direta pro ffmpeg) NÃO transcrve — o transcreverVideo
+    // exige arquivo local; se não baixamos o vídeo, pulamos.
+    let transcricao: Transcricao | null = null;
+    if (globalConfig.GROQ_API_KEY && !ehFoto && baixado && ehVideo(baixado.caminho)) {
+      try {
+        log('transcrição: extraindo áudio + Groq Whisper turbo...');
+        transcricao = await transcreverVideo(baixado.caminho, globalConfig.GROQ_API_KEY);
+        if (transcricao) {
+          const previa = transcricao.texto.slice(0, 90).replace(/\n/g, ' ');
+          log(`transcrição: "${previa}${transcricao.texto.length > 90 ? '…' : ''}"`);
+        } else {
+          log('transcrição: sem áudio detectado ou vídeo grande demais.');
+        }
+      } catch (err) {
+        // Belt-and-suspenders — transcreverVideo já engole tudo, mas garanto aqui.
+        log(`transcrição falhou (ignorando): ${err instanceof Error ? err.message : err}`);
+      }
+    }
 
     log('cérebro: inferindo cliente/tipo + gerando copy...');
     const planoBruto = await gerarPlanoComInferencia(
@@ -131,6 +154,7 @@ export async function processarIngest(
         caminhoLocal: inputPrincipal,
       },
       frames,
+      transcricao,
     );
     if (ehCarrossel) {
       planoBruto.meta.tipo = 'carrossel';
@@ -151,8 +175,8 @@ export async function processarIngest(
 
     log(`   cliente=${planoBruto.meta.cliente} tipo=${planoBruto.meta.tipo} redes=${planoBruto.redes.join(',')}`);
 
-    log('redator: polindo no tom Swell...');
-    const planoPolido = await polirCopy(planoBruto, frames);
+    log('redator: polindo no tom da marca...');
+    const planoPolido = await polirCopy(planoBruto, frames, tenant.tomVoz, transcricao);
 
     let plano = planoPolido;
     if (ehCarrossel) {

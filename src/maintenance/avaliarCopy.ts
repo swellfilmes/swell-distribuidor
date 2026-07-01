@@ -105,7 +105,7 @@ export async function avaliarCopyTodas(
     const l = linhas[i];
     onLog(`\n[${i + 1}/${linhas.length}] ${l.nome}`);
     try {
-      const { planoMelhorado, avaliacoes } = await avaliarECorrigir(l.plano);
+      const { planoMelhorado, avaliacoes } = await avaliarECorrigir(l.plano, tenant.tomVoz);
       for (const a of avaliacoes) {
         totalAvaliacoes++;
         totalNotaAntes += a.notaAntes;

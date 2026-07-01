@@ -7,6 +7,7 @@ import { loadTenantConfig } from '@/src/db/tenantConfig';
 import { temNotionConectado, temZernioConectado } from '@/src/tenant';
 import { NotionConnectButton } from '@/components/NotionConnectButton';
 import { StepZernio } from '@/components/onboarding/StepZernio';
+import { TomVozEditor } from '@/components/TomVozEditor';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -122,6 +123,10 @@ export default async function ConfiguracoesPage() {
             </div>
           </div>
         </section>
+      )}
+
+      {ativa && (
+        <TomVozEditor podeEditar={ativa.role === 'owner' || user?.role === 'admin'} />
       )}
     </div>
   );

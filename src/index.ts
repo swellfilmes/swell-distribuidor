@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { ehImagem, parseNome } from './ingest/parseNome';
-import { extrairFrames } from './ingest/extrairFrames';
+import { ehImagem, ehVideo, parseNome } from './ingest/parseNome';
+import { extrairFramesPorCena } from './ingest/extrairFrames';
+import { transcreverVideo, type Transcricao } from './ingest/transcricao';
 import { lerImagemComoFrame, detectarOrientacaoImagem } from './ingest/lerImagem';
 import { gerarPlano, gerarPlanoComInferencia } from './brain/cerebro';
 import { polirCopy } from './brain/redator';
@@ -31,7 +32,7 @@ import { executarVerificarCliente } from './clientes/verificarCliente';
 import { resolverAccountIdsDoCliente } from './clientes/resolverCliente';
 import type { Rede } from './types';
 import { loadTenantConfig, listarEmpresasAtivas } from './db/tenantConfig';
-import type { TenantConfig } from './config';
+import { globalConfig, type TenantConfig } from './config';
 
 function log(etapa: string, msg: string) {
   const hora = new Date().toLocaleTimeString('pt-BR');
@@ -303,15 +304,32 @@ async function main() {
     log('ingest', ehCarrossel ? `carrossel: lendo ${caminhos.length} imagens.` : 'arquivo é imagem — pulo extração de frames.');
     frames = await Promise.all(caminhos.map((c) => lerImagemComoFrame(c)));
   } else {
-    log('ingest', 'extraindo 6 frames do vídeo...');
-    frames = await extrairFrames(caminho, 6);
+    log('ingest', 'extraindo frames por detecção de cena (fallback: 6 uniformes)...');
+    frames = await extrairFramesPorCena(caminho, 12);
     log('ingest', `${frames.length} frames extraídos.`);
+  }
+
+  // Transcrição do áudio via Groq Whisper (best-effort).
+  let transcricao: Transcricao | null = null;
+  if (globalConfig.GROQ_API_KEY && !ehFoto && ehVideo(caminho)) {
+    try {
+      log('transcricao', 'extraindo áudio + Groq Whisper turbo...');
+      transcricao = await transcreverVideo(caminho, globalConfig.GROQ_API_KEY);
+      if (transcricao) {
+        const previa = transcricao.texto.slice(0, 90).replace(/\n/g, ' ');
+        log('transcricao', `"${previa}${transcricao.texto.length > 90 ? '…' : ''}"`);
+      } else {
+        log('transcricao', 'sem áudio detectado ou vídeo grande demais.');
+      }
+    } catch (err) {
+      log('transcricao', `falhou (ignorando): ${err instanceof Error ? err.message : err}`);
+    }
   }
 
   log('brain', 'chamando Claude (Sonnet 4.6) com o(s) frame(s)...');
   let planoBruto;
   if (meta) {
-    planoBruto = await gerarPlano(meta, frames);
+    planoBruto = await gerarPlano(meta, frames, transcricao);
   } else {
     // Inferência: cérebro chuta cliente/tipo a partir do nome de arquivo
     // e do conteúdo. Pra carrossel: força tipo depois.
@@ -327,6 +345,7 @@ async function main() {
         caminhoLocal: caminho,
       },
       frames,
+      transcricao,
     );
     if (ehCarrossel) planoBruto.meta.tipo = 'carrossel';
     log('brain', `inferido: cliente=${planoBruto.meta.cliente} tipo=${planoBruto.meta.tipo} orientacao=${planoBruto.meta.orientacao}`);
@@ -335,8 +354,8 @@ async function main() {
   log('brain', `conteudoAI=${planoBruto.conteudoAI}`);
   log('brain', `resumo: ${planoBruto.resumoInterno}`);
 
-  log('redator', 'polindo copy no tom Swell...');
-  const planoPolido = await polirCopy(planoBruto, frames);
+  log('redator', 'polindo copy no tom da marca...');
+  const planoPolido = await polirCopy(planoBruto, frames, tenant.tomVoz, transcricao);
 
   let plano = planoPolido;
   if (!ehFoto) {

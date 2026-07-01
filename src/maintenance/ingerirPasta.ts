@@ -4,15 +4,16 @@ import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { notionDo } from '../lib/clients';
-import { extrairFrames } from '../ingest/extrairFrames';
-import { ehImagem } from '../ingest/parseNome';
+import { extrairFramesPorCena } from '../ingest/extrairFrames';
+import { transcreverVideo, type Transcricao } from '../ingest/transcricao';
+import { ehImagem, ehVideo } from '../ingest/parseNome';
 import { lerImagemComoFrame } from '../ingest/lerImagem';
 import { gerarPlanoComInferencia } from '../brain/cerebro';
 import { polirCopy } from '../brain/redator';
 import { gerarThumbnailDoVideoLocal } from '../brain/gerarThumbnail';
 import { chunkRichText } from '../lib/notionChunks';
 import { subirParaR2 } from '../storage/r2';
-import { notionDbIdDo, type TenantConfig } from '../config';
+import { globalConfig, notionDbIdDo, type TenantConfig } from '../config';
 import type { Orientacao, PlanoPublicacao } from '../types';
 
 const exec = promisify(execFile);
@@ -154,11 +155,26 @@ async function processarUmVideo(
   }
 
   const ehFoto = ehImagem(v.caminhoAbsoluto);
-  onLog(`  🔍  ffprobe + ${ehFoto ? 'lendo imagem (foto)' : '6 frames'}...`);
+  onLog(`  🔍  ffprobe + ${ehFoto ? 'lendo imagem (foto)' : 'frames por cena'}...`);
   const orientacao = await detectarOrientacao(v.caminhoAbsoluto);
   const frames = ehFoto
     ? [await lerImagemComoFrame(v.caminhoAbsoluto)]
-    : await extrairFrames(v.caminhoAbsoluto, 6);
+    : await extrairFramesPorCena(v.caminhoAbsoluto, 12);
+
+  // Transcrição do áudio (best-effort). Só faz sentido pra vídeo, foto não tem.
+  let transcricao: Transcricao | null = null;
+  if (globalConfig.GROQ_API_KEY && !ehFoto && ehVideo(v.caminhoAbsoluto)) {
+    try {
+      onLog(`  🎙   transcrevendo áudio via Groq Whisper...`);
+      transcricao = await transcreverVideo(v.caminhoAbsoluto, globalConfig.GROQ_API_KEY);
+      if (transcricao) {
+        const previa = transcricao.texto.slice(0, 90).replace(/\n/g, ' ');
+        onLog(`    "${previa}${transcricao.texto.length > 90 ? '…' : ''}"`);
+      }
+    } catch (err) {
+      onLog(`    transcrição falhou (ignorando): ${err instanceof Error ? err.message : err}`);
+    }
+  }
 
   onLog(`  🧠  cérebro (Sonnet 4.6) inferindo cliente/tipo + copy...`);
   const planoBruto = await gerarPlanoComInferencia(
@@ -170,11 +186,12 @@ async function processarUmVideo(
       caminhoLocal: v.caminhoAbsoluto,
     },
     frames,
+    transcricao,
   );
   onLog(`    cliente=${planoBruto.meta.cliente} tipo=${planoBruto.meta.tipo} redes=${planoBruto.redes.join(',')}`);
 
-  onLog(`  ✍️   redator polindo copy no tom Swell...`);
-  const planoPolido = await polirCopy(planoBruto, frames);
+  onLog(`  ✍️   redator polindo copy no tom da marca...`);
+  const planoPolido = await polirCopy(planoBruto, frames, tenant.tomVoz, transcricao);
 
   let plano = planoPolido;
   if (ehFoto) {

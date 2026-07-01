@@ -27,6 +27,11 @@ export interface TenantConfig {
    * da Swell — não tem zernioApiKey própria. Aqui fica o profile_id retornado
    * por zernio.profiles.createProfile no momento do onboarding. */
   zernioProfileId?: string;
+  /** Tom de voz personalizado da marca (opcional). Quando vazio, redator e
+   * avaliador usam TOM_DE_VOZ_SWELL como fallback. Fica em `empresas` (não em
+   * `tenant_secrets`) porque não é segredo — pode aparecer em bundles client
+   * se necessário. */
+  tomVoz?: string;
 }
 
 /** Helpers pra checar se uma empresa já tem Notion / Zernio prontos. */
