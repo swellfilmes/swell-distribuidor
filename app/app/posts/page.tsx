@@ -188,6 +188,7 @@ export default async function PostsPage({ searchParams }: Props) {
           filtros={filtros}
           ordem={ordem}
           geradoEm={new Date().toISOString()}
+          ehAdminGlobal={user.role === 'admin'}
         />
       </Suspense>
     </div>

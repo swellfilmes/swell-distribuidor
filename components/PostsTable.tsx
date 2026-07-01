@@ -31,6 +31,9 @@ interface Props {
   };
   ordem: { sort: CampoSort; dir: DirecaoSort };
   geradoEm: string;
+  /** True se o usuário logado é admin global (não empresa-owner). Só admin
+   *  vê botão de reanálise em massa — usuário comum não deve ter acesso. */
+  ehAdminGlobal?: boolean;
 }
 
 interface ColunaSort {
@@ -65,7 +68,7 @@ function novaDataPreservandoHora(
   return `${novoDiaIso}T09:00:00-03:00`;
 }
 
-export function PostsTable({ posts: postsServer, clientes, filtros, ordem, geradoEm }: Props) {
+export function PostsTable({ posts: postsServer, clientes, filtros, ordem, geradoEm, ehAdminGlobal = false }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -380,14 +383,16 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           >
             {sincronizando ? 'Sincronizando…' : '↻ Atualizar status'}
           </button>
-          <button
-            onClick={() => setConfirmandoReanalise(true)}
-            disabled={reanalisando}
-            title="Roda a análise atualizada (cenas + transcrição + tom de voz) em todos os posts com status Aguardando aprovação. Sobrescreve as legendas — a data, redes e thumbnail não mudam."
-            className="rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-primary hover:bg-primary/20 disabled:opacity-60"
-          >
-            {reanalisando ? 'Enfileirando…' : '✨ Reanalisar legendas'}
-          </button>
+          {ehAdminGlobal && (
+            <button
+              onClick={() => setConfirmandoReanalise(true)}
+              disabled={reanalisando}
+              title="[Admin] Roda a análise atualizada (cenas + transcrição + tom de voz) em todos os posts Aguardando aprovação."
+              className="rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-primary hover:bg-primary/20 disabled:opacity-60"
+            >
+              {reanalisando ? 'Enfileirando…' : '✨ Reanalisar legendas'}
+            </button>
+          )}
           <button
             onClick={refrescar}
             disabled={pending}

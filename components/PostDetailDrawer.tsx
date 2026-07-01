@@ -210,9 +210,10 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose, onEx
             ) : post.copyResumo ? (
               <>
                 <p className="mb-2 text-xs text-fg-muted/50">
-                  Esse post não tem PlanoJSON estruturado (provavelmente foi
-                  criado antes do upgrade). Rode <code>--reparar-copy</code> pra
-                  poder editar por rede aqui.
+                  Esse post não tem legenda estruturada por rede ainda
+                  (provavelmente foi criado antes de uma atualização). Você
+                  ainda vê o texto salvo abaixo, mas edição inline por rede
+                  fica indisponível.
                 </p>
                 <pre className="whitespace-pre-wrap rounded-md border border-bd/10 bg-surface p-3 text-xs text-fg-muted/80">
                   {post.copyResumo}
@@ -222,6 +223,20 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose, onEx
               <p className="text-sm text-fg-muted/60">Sem copy ainda.</p>
             )}
           </Section>
+
+          {post.plano && (
+            <Section title="Ajustar legenda com IA">
+              <AjustarCopyIA
+                pageId={post.pageId}
+                pendente={pendente}
+                onSucesso={(novoPlano) => {
+                  // Update otimista: injeta o plano novo no post local pra
+                  // o CopyRedeEditor de cada rede pegar a copy nova.
+                  onSalvar({}, { plano: novoPlano });
+                }}
+              />
+            </Section>
+          )}
 
           {post.logPublicacao && (
             <Section title="Log de publicação">
@@ -537,6 +552,107 @@ function CopyRedeEditor({
           )}
         </>
       )}
+    </div>
+  );
+}
+
+const SUGESTOES_RAPIDAS = [
+  'Mais direto e curto',
+  'Mais formal / institucional',
+  'Mais casual / conversacional',
+  'Adiciona um gancho mais forte no começo',
+  'Adiciona chamada pra ação (CTA) sutil no fim',
+  'Menciona o cliente pelo nome',
+];
+
+function AjustarCopyIA({
+  pageId,
+  pendente,
+  onSucesso,
+}: {
+  pageId: string;
+  pendente: boolean;
+  onSucesso: (novoPlano: import('@/src/types').PlanoPublicacao) => void;
+}) {
+  const [instrucao, setInstrucao] = useState('');
+  const [processando, setProcessando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [okMsg, setOkMsg] = useState<string | null>(null);
+
+  async function enviar() {
+    const texto = instrucao.trim();
+    if (texto.length < 3) {
+      setErro('Escreva o que quer ajustar (mínimo 3 caracteres).');
+      return;
+    }
+    setProcessando(true);
+    setErro(null);
+    setOkMsg(null);
+    try {
+      const resp = await fetch(`/api/posts/${pageId}/ajustar-copy`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ instrucao: texto }),
+      });
+      const data = (await resp.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        plano?: import('@/src/types').PlanoPublicacao;
+      };
+      if (!resp.ok || data.error || !data.plano) {
+        throw new Error(data.error ?? `HTTP ${resp.status}`);
+      }
+      onSucesso(data.plano);
+      setInstrucao('');
+      setOkMsg('Legenda atualizada. Rola pra cima pra ver a nova versão em cada rede.');
+      setTimeout(() => setOkMsg(null), 6000);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : String(e));
+    } finally {
+      setProcessando(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-primary/25 bg-primary/[0.04] p-3">
+      <p className="mb-2 text-xs text-fg-muted">
+        Descreva o que quer mudar na legenda (aplica em todas as redes de uma vez).
+      </p>
+      <textarea
+        value={instrucao}
+        onChange={(e) => setInstrucao(e.target.value)}
+        disabled={processando || pendente}
+        rows={3}
+        placeholder="Ex: mais direto, menos formal, adiciona CTA no fim, menciona a marca X..."
+        className="w-full resize-y rounded border border-bd/50 bg-surface/60 p-2 text-sm text-fg placeholder:text-fg-muted/40 focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20"
+      />
+
+      <div className="mt-2 flex flex-wrap gap-1">
+        {SUGESTOES_RAPIDAS.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setInstrucao((v) => (v.trim() ? `${v.trim()}. ${s}` : s))}
+            disabled={processando || pendente}
+            className="rounded-full border border-bd/40 bg-surface/40 px-2 py-0.5 text-[10px] text-fg-muted hover:border-primary/40 hover:text-fg disabled:opacity-40"
+          >
+            + {s}
+          </button>
+        ))}
+      </div>
+
+      {erro && <p className="mt-2 text-xs text-error">Erro: {erro}</p>}
+      {okMsg && !erro && <p className="mt-2 text-xs text-success">{okMsg}</p>}
+
+      <div className="mt-3 flex justify-end">
+        <button
+          onClick={enviar}
+          disabled={processando || pendente || instrucao.trim().length < 3}
+          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-app transition-colors hover:bg-primary/85 disabled:opacity-40"
+        >
+          {processando ? 'Reescrevendo…' : '✨ Reescrever com IA'}
+        </button>
+      </div>
     </div>
   );
 }
