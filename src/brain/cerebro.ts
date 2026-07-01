@@ -162,7 +162,7 @@ export async function gerarPlanoComInferencia(
   const resposta = await comTimeoutERetry(
     () =>
       client.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-opus-4-7',
         max_tokens: 2048,
         system: SYSTEM_PROMPT_COM_META,
         messages: [{ role: 'user', content: userContent }],
@@ -253,7 +253,7 @@ export async function gerarPlano(
   const resposta = await comTimeoutERetry(
     () =>
       client.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-opus-4-7',
         max_tokens: 2048,
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: userContent }],

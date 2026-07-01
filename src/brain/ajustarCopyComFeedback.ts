@@ -87,7 +87,7 @@ export async function ajustarCopyComFeedback(
   const resposta = await comTimeoutERetry(
     () =>
       client.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-opus-4-7',
         max_tokens: 3072,
         system: buildSystemPrompt(tomVoz),
         messages: [{ role: 'user', content: userMessage }],

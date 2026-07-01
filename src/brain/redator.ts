@@ -96,7 +96,7 @@ export async function polirCopy(
   const resposta = await comTimeoutERetry(
     () =>
       client.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-opus-4-7',
         max_tokens: 2048,
         system: buildSystemPrompt(tomVoz),
         messages: [{ role: 'user', content: userContent }],
