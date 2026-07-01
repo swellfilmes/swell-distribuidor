@@ -94,17 +94,27 @@ export default async function PostsPage({ searchParams }: Props) {
   // (semanas adjacentes) em vez do filtro fechado de mês. Isso garante que
   // posts de jun aparecem nas células que mostram dias finais de maio, e
   // posts de jul nas células que mostram dias iniciais de jul.
+  //
+  // IMPORTANTE: `filtros.mes` continua populado sempre — o cliente
+  // (PostsTable + CalendarView) usa esse valor pra saber o mês visível
+  // e trocar via ‹/›. `dataDe`/`dataAte` são detalhes só da query Notion.
   const ehCalendario = sp.view === 'calendario';
   const rangeCalendario =
     ehCalendario && sp.mes ? rangeDaGridCalendario(sp.mes) : null;
   const filtros = {
     status: sp.status || undefined,
     cliente: sp.cliente || undefined,
-    mes: rangeCalendario ? undefined : sp.mes || undefined,
-    dataDe: rangeCalendario?.de,
-    dataAte: rangeCalendario?.ate,
+    mes: sp.mes || undefined,
     tipo: sp.tipo || undefined,
     redes,
+  };
+  const filtrosQuery = {
+    ...filtros,
+    // No calendário, o range cobre a grid inteira → tira o filtro fechado
+    // de mês pra evitar dupla restrição de data.
+    mes: rangeCalendario ? undefined : filtros.mes,
+    dataDe: rangeCalendario?.de,
+    dataAte: rangeCalendario?.ate,
   };
   const ordem = {
     sort: validarSort(sp.sort),
@@ -139,7 +149,7 @@ export default async function PostsPage({ searchParams }: Props) {
   let erro: string | null = null;
   try {
     const [postsRes, clientesRes] = await Promise.all([
-      listarPostsDoNotion(tenant, { ...filtros, ...ordem }).catch((e) => {
+      listarPostsDoNotion(tenant, { ...filtrosQuery, ...ordem }).catch((e) => {
         erro = e instanceof Error ? e.message : String(e);
         return [] as PostListado[];
       }),
