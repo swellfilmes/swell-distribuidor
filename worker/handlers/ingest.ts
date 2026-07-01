@@ -187,11 +187,14 @@ export async function processarIngest(
         })),
       };
       log(`carrossel: ${plano.mediasExtras?.length ?? 0} mídia(s) extra(s) anexada(s) ao plano.`);
-    } else if (!ehFoto && !streamarDaUrl && baixado) {
-      // Thumbnail só roda quando temos o arquivo local (extrair frames hi-res
-      // pra subir no R2). Vídeo grande streamed da URL: pula thumbnail.
+    } else if (!ehFoto) {
+      // Thumbnail: se baixamos o vídeo, ffmpeg lê do arquivo local. Em modo
+      // streaming (>200MB), ffmpeg lê da URL do R2 direto — mais lento, mas
+      // funciona com HTTP range requests. Se falhar, seguimos sem thumbnail
+      // e o Zernio pega um frame arbitrário do vídeo.
+      const inputThumb = baixado?.caminho ?? inputFfmpeg;
       try {
-        const thumb = await gerarThumbnailDoVideoLocal(tenant, baixado.caminho, planoPolido, (msg) =>
+        const thumb = await gerarThumbnailDoVideoLocal(tenant, inputThumb, planoPolido, (msg) =>
           log(`   ${msg}`),
         );
         plano = { ...planoPolido, thumbnailUrl: thumb.thumbnailUrl };
@@ -199,8 +202,6 @@ export async function processarIngest(
         const msg = err instanceof Error ? err.message : String(err);
         log(`thumbnail falhou (sigo sem): ${msg}`);
       }
-    } else if (streamarDaUrl) {
-      log('vídeo grande streamed — pulo agent de thumbnail (Zernio gera uma da URL).');
     } else {
       log('foto: imagem é a própria thumb, pulo agent de thumbnail.');
     }

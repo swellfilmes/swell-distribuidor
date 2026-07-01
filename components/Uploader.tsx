@@ -378,7 +378,7 @@ export function Uploader() {
                     etapa: {
                       tipo: 'erro',
                       jobId,
-                      erro: 'Demorou demais (>10min). O worker pode ter caído. Verifica o Railway ou tenta de novo.',
+                      erro: 'Demorou demais (>10min). Algo travou no processamento — tenta subir o vídeo de novo.',
                     },
                   },
             );
@@ -616,17 +616,20 @@ function ItemCard({
           </>
         )}
         {etapa.tipo === 'enfileirado' && (
-          <p className="text-xs text-fg-muted/60">
-            Enfileirado (job #{etapa.jobId}) — aguardando worker…
-          </p>
+          <>
+            <div className="h-1 w-full overflow-hidden rounded bg-primary/10">
+              <div className="h-full w-1/4 animate-pulse bg-primary/40" />
+            </div>
+            <p className="mt-1 text-xs text-fg-muted">Na fila — em instantes começamos…</p>
+          </>
         )}
         {etapa.tipo === 'processando' && (
           <>
             <div className="h-1 w-full overflow-hidden rounded bg-primary/10">
-              <div className="h-full w-1/3 animate-pulse bg-primary/60" />
+              <div className="h-full w-2/3 animate-pulse bg-primary/60" />
             </div>
-            <p className="mt-1 text-xs text-fg-muted/60">
-              Worker processando (job #{etapa.jobId})…
+            <p className="mt-1 text-xs text-fg-muted">
+              {friendlyEtapaDeLogs(etapa.logs)}
             </p>
           </>
         )}
@@ -669,10 +672,47 @@ function Barra({ pct }: { pct: number }) {
 
 function AvisoWorker() {
   return (
-    <p className="mt-4 rounded border border-primary/30 bg-primary/8 px-3 py-2 text-xs text-fg">
-      💡 O worker do Railway pega os jobs em paralelo. Se algum ficar parado em
-      &ldquo;enfileirado&rdquo; por mais de 1min, dá uma olhada no painel do
-      Railway.
+    <p className="mt-4 rounded-lg border border-bd/40 bg-surface/40 px-3 py-2 text-xs text-fg-muted">
+      Cada vídeo é processado individualmente — analisamos, transcrevemos, escrevemos as legendas e criamos a capa. Você pode continuar navegando enquanto isso.
     </p>
   );
+}
+
+/**
+ * Converte a última linha relevante do log do worker num nome de etapa amigável.
+ * A ordem dos `if` importa porque os logs se acumulam — checamos do MAIS
+ * TARDIO pro mais cedo, então mostramos sempre a etapa mais avançada.
+ */
+function friendlyEtapaDeLogs(logs: string[]): string {
+  const texto = logs.join('\n').toLowerCase();
+  if (texto.includes('pronto:') || texto.includes('linha no notion')) {
+    return 'Salvando no Notion…';
+  }
+  if (texto.includes('thumbnail: subindo no r2')) return 'Publicando a capa…';
+  if (texto.includes('thumbnail: extraindo frame hi-res')) return 'Escolhendo a melhor capa…';
+  if (texto.includes('thumbnail: reavaliando') || texto.includes('thumbnail: round 2')) {
+    return 'Analisando mais opções de capa…';
+  }
+  if (texto.includes('thumbnail: avaliando')) return 'Analisando capa com IA…';
+  if (texto.includes('thumbnail:')) return 'Gerando capa…';
+  if (texto.includes('redator: polindo') || texto.includes('polindo no tom')) {
+    return 'Refinando as legendas no tom da marca…';
+  }
+  if (texto.includes('cérebro:') || texto.includes('inferindo cliente')) {
+    return 'Escrevendo as legendas…';
+  }
+  if (texto.includes('transcrição: "') || texto.includes('transcrição: sem áudio')) {
+    return 'Áudio transcrito, seguindo…';
+  }
+  if (texto.includes('transcrição:') || texto.includes('groq whisper')) {
+    return 'Transcrevendo o áudio do vídeo…';
+  }
+  if (texto.includes('frames por cena') || texto.includes('ffprobe')) {
+    return 'Analisando o vídeo (cenas e orientação)…';
+  }
+  if (texto.includes('ffmpeg lê direto') || texto.includes('vídeo grande')) {
+    return 'Preparando pra analisar…';
+  }
+  if (texto.includes('inicio')) return 'Iniciando…';
+  return 'Processando…';
 }

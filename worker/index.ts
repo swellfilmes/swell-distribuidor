@@ -73,6 +73,14 @@ async function rodar(job: typeof jobs.$inferSelect): Promise<void> {
       const onLog = (m: string) => {
         logs.push(m);
         log(job.id, 'ingest', m);
+        // Persiste logs em tempo real pra UI mostrar a etapa atual sem
+        // esperar terminar. Fire-and-forget + WHERE status='in_progress'
+        // pra não sobrescrever o result final quando o job finalizar.
+        void db
+          .update(jobs)
+          .set({ result: { logs: [...logs] } as never, atualizadoEm: new Date() })
+          .where(and(eq(jobs.id, job.id), eq(jobs.status, 'in_progress')))
+          .catch(() => {});
       };
       const resultado = await processarIngest(job.empresaId, payload, onLog);
 
