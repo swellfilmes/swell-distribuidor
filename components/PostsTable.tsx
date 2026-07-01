@@ -517,6 +517,21 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           if (selecionado) salvar(selecionado.pageId, mud, over);
         }}
         onClose={() => setSelecionadoId(null)}
+        onExcluir={async (pageId) => {
+          const resp = await fetch(`/api/posts/${pageId}`, { method: 'DELETE' });
+          const data = (await resp.json().catch(() => ({}))) as {
+            ok?: boolean;
+            error?: string;
+            resumo?: { redesJaPublicadas?: string[]; avisos?: string[] };
+          };
+          if (!resp.ok || data.error) {
+            throw new Error(data.error ?? `HTTP ${resp.status}`);
+          }
+          // Remove do state local otimista (some da tabela sem esperar refresh).
+          setPosts((atual) => atual.filter((p) => p.pageId !== pageId));
+          setSelecionadoId(null);
+          startTransition(() => router.refresh());
+        }}
       />
     </>
   );

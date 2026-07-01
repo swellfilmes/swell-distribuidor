@@ -15,9 +15,14 @@ interface Props {
   erro: string | null;
   onSalvar: (mud: PatchPostInput, overrides: Partial<PostListado>) => void;
   onClose: () => void;
+  /** Chamado quando o usuário confirma a exclusão. Se undefined, botão some. */
+  onExcluir?: (pageId: string) => Promise<void>;
 }
 
-export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Props) {
+export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose, onExcluir }: Props) {
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
+  const [erroExclusao, setErroExclusao] = useState<string | null>(null);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -292,6 +297,74 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose }: Pr
               </button>
             </div>
           </Section>
+
+          {onExcluir && (
+            <Section title="Zona de perigo">
+              {!confirmandoExclusao ? (
+                <button
+                  onClick={() => {
+                    setErroExclusao(null);
+                    setConfirmandoExclusao(true);
+                  }}
+                  disabled={pendente || excluindo}
+                  className="rounded-lg border border-error/40 px-3 py-1.5 text-sm font-medium text-error transition-colors hover:bg-error/10 disabled:opacity-40"
+                >
+                  Excluir post
+                </button>
+              ) : (
+                <div className="rounded-lg border border-error/40 bg-error/5 p-3">
+                  <p className="text-sm text-fg">
+                    Excluir <span className="font-medium">{post.nome}</span>?
+                  </p>
+                  <p className="mt-1 text-xs text-fg-muted">
+                    Isso vai:
+                    <br />• Apagar o arquivo do R2 (irreversível)
+                    <br />• Cancelar o agendamento no Zernio se houver
+                    <br />• Arquivar a página no Notion
+                    {post.status === 'Publicado' || post.status === 'Publicado parcial' ? (
+                      <>
+                        <br />
+                        <span className="text-error">
+                          ⚠️ Esse post JÁ FOI PUBLICADO nas redes. A exclusão aqui não remove ele
+                          das plataformas — você precisa deletar manualmente no Instagram, YouTube,
+                          etc.
+                        </span>
+                      </>
+                    ) : null}
+                  </p>
+                  {erroExclusao && (
+                    <p className="mt-2 text-xs text-error">Erro: {erroExclusao}</p>
+                  )}
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={() => setConfirmandoExclusao(false)}
+                      disabled={excluindo}
+                      className="rounded-lg border border-bd/50 px-3 py-1.5 text-xs font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:opacity-40"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setExcluindo(true);
+                        setErroExclusao(null);
+                        try {
+                          await onExcluir(post.pageId);
+                          // Drawer fechado pelo pai via onClose no callback.
+                        } catch (e) {
+                          setErroExclusao(e instanceof Error ? e.message : String(e));
+                          setExcluindo(false);
+                        }
+                      }}
+                      disabled={excluindo}
+                      className="rounded-lg bg-error px-3 py-1.5 text-xs font-medium text-app transition-colors hover:bg-error/85 disabled:opacity-40"
+                    >
+                      {excluindo ? 'Excluindo…' : 'Sim, excluir permanentemente'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </Section>
+          )}
         </div>
       </aside>
     </div>

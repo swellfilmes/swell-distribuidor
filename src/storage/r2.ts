@@ -6,6 +6,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import mime from 'mime-types';
@@ -95,6 +96,37 @@ export async function gerarUrlAssinadaUpload(
   const baseLimpa = globalConfig.R2_PUBLIC_BASE_URL.replace(/\/$/, '');
   const urlPublica = `${baseLimpa}/${chaveR2}`;
   return { url, chaveR2, urlPublica };
+}
+
+/**
+ * Deleta um objeto do R2. Idempotente — se a chave não existir, R2 responde
+ * OK igual. Ignora erros silenciosamente (best-effort) porque a UI já
+ * confirmou a exclusão do post; queremos que o Notion+Zernio já estejam
+ * limpos independente do R2.
+ */
+export async function deletarDoR2(chaveR2: string): Promise<void> {
+  try {
+    await s3.send(
+      new DeleteObjectCommand({
+        Bucket: globalConfig.R2_BUCKET,
+        Key: chaveR2,
+      }),
+    );
+  } catch {
+    // Silencia — post já está sendo excluído; se o R2 não deletar agora,
+    // o arquivo fica órfão mas não bloqueia a exclusão do post pro usuário.
+  }
+}
+
+/**
+ * Deriva a chave R2 (`tenants/{id}/publicar/...`) a partir da URL pública
+ * de mídia. Retorna null se a URL não bater com o base URL configurado.
+ */
+export function chaveR2DeUrl(urlPublica: string | null | undefined): string | null {
+  if (!urlPublica) return null;
+  const base = globalConfig.R2_PUBLIC_BASE_URL.replace(/\/$/, '');
+  if (!urlPublica.startsWith(base + '/')) return null;
+  return urlPublica.slice(base.length + 1);
 }
 
 /**
