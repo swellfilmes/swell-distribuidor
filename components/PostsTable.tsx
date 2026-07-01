@@ -81,6 +81,37 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
   );
   const [sincronizando, setSincronizando] = useState(false);
   const [resultadoSync, setResultadoSync] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [reanalisando, setReanalisando] = useState(false);
+  const [confirmandoReanalise, setConfirmandoReanalise] = useState(false);
+
+  async function reanalisarLegendas() {
+    setReanalisando(true);
+    setResultadoSync(null);
+    setConfirmandoReanalise(false);
+    try {
+      const resp = await fetch('/api/reanalisar-legendas', { method: 'POST' });
+      const data = (await resp.json()) as {
+        ok?: boolean;
+        enfileirados?: number;
+        total?: number;
+        mensagem?: string;
+        error?: string;
+      };
+      if (!resp.ok || data.error) {
+        setResultadoSync({ ok: false, msg: data.error ?? `HTTP ${resp.status}` });
+      } else {
+        setResultadoSync({
+          ok: true,
+          msg: `✓ ${data.mensagem ?? `${data.enfileirados} post(s) na fila.`}`,
+        });
+      }
+    } catch (err) {
+      setResultadoSync({ ok: false, msg: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setReanalisando(false);
+      setTimeout(() => setResultadoSync(null), 10000);
+    }
+  }
 
   async function sincronizarZernio() {
     setSincronizando(true);
@@ -350,6 +381,14 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
             {sincronizando ? 'Sincronizando…' : '↻ Atualizar status'}
           </button>
           <button
+            onClick={() => setConfirmandoReanalise(true)}
+            disabled={reanalisando}
+            title="Roda a análise atualizada (cenas + transcrição + tom de voz) em todos os posts com status Aguardando aprovação. Sobrescreve as legendas — a data, redes e thumbnail não mudam."
+            className="rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-primary hover:bg-primary/20 disabled:opacity-60"
+          >
+            {reanalisando ? 'Enfileirando…' : '✨ Reanalisar legendas'}
+          </button>
+          <button
             onClick={refrescar}
             disabled={pending}
             className="rounded-md border border-bd/15 px-2 py-1 text-fg-muted/80 hover:bg-primary/5 disabled:opacity-60"
@@ -358,6 +397,36 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           </button>
         </div>
       </div>
+
+      {confirmandoReanalise && (
+        <div className="mb-3 rounded-lg border border-primary/40 bg-primary/5 p-3">
+          <p className="text-sm text-fg">
+            Reanalisar legendas de <b>todos os posts Aguardando aprovação</b>?
+          </p>
+          <p className="mt-1 text-xs text-fg-muted">
+            Isso vai reescrever a copy usando o pipeline atualizado (detecção de cena, transcrição
+            de áudio via Groq, tom de voz configurado da empresa). Data, redes, thumbnail e status
+            NÃO mudam.
+            <br />
+            Cada post leva ~1-2min no worker. Você pode fechar essa tela — o processamento continua
+            no background.
+          </p>
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={() => setConfirmandoReanalise(false)}
+              className="rounded-lg border border-bd/50 px-3 py-1.5 text-xs font-medium text-fg-muted hover:bg-surface-2 hover:text-fg"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={reanalisarLegendas}
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-app hover:bg-primary/85"
+            >
+              Sim, reanalisar todos
+            </button>
+          </div>
+        </div>
+      )}
 
       {resultadoSync && (
         <div

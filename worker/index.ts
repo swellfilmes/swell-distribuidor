@@ -13,6 +13,7 @@ import { and, asc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/src/db';
 import { jobs } from '@/src/db/schema';
 import { processarIngest, type PayloadIngest } from './handlers/ingest';
+import { processarReanalisar, type PayloadReanalisar } from './handlers/reanalisar';
 import { publicarAprovadosTodas } from './crons/publicarAprovadosTodas';
 import { sincronizarEditsTodas } from './crons/sincronizarEditsTodas';
 import { atualizarPendentesTodas } from './crons/atualizarPendentesTodas';
@@ -95,6 +96,31 @@ async function rodar(job: typeof jobs.$inferSelect): Promise<void> {
         .where(eq(jobs.id, job.id));
 
       log(job.id, 'fim', `✅ done (pageId=${resultado.pageId})`);
+    } else if (job.tipo === 'reanalisar') {
+      const payload = job.payload as PayloadReanalisar;
+      const logs: string[] = [];
+      const onLog = (m: string) => {
+        logs.push(m);
+        log(job.id, 'reanalisar', m);
+        void db
+          .update(jobs)
+          .set({ result: { logs: [...logs] } as never, atualizadoEm: new Date() })
+          .where(and(eq(jobs.id, job.id), eq(jobs.status, 'in_progress')))
+          .catch(() => {});
+      };
+      const resultado = await processarReanalisar(job.empresaId, payload, onLog);
+
+      await db
+        .update(jobs)
+        .set({
+          status: 'done',
+          result: { ...resultado, logs } as never,
+          atualizadoEm: new Date(),
+          finalizadoEm: new Date(),
+        })
+        .where(eq(jobs.id, job.id));
+
+      log(job.id, 'fim', `✅ reanalisado (pageId=${resultado.pageId}, transcrição=${resultado.usouTranscricao})`);
     } else {
       throw new Error(`tipo desconhecido: ${job.tipo}`);
     }
