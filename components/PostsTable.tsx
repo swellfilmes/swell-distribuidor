@@ -12,6 +12,7 @@ import {
   STATUS_VALORES,
   TIPO_VALORES,
   REDE_VALORES,
+  labelDoStatus,
   type PostListado,
   type CampoSort,
   type DirecaoSort,
@@ -269,7 +270,10 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           valor={filtros.status ?? ''}
           opcoes={['', ...STATUS_VALORES]}
           onChange={(v) => setFiltro('status', v)}
-          rotulos={{ '': 'Todos' }}
+          rotulos={{
+            '': 'Todos',
+            ...Object.fromEntries(STATUS_VALORES.map((s) => [s, labelDoStatus(s)])),
+          }}
         />
         <FiltroSelect
           label="Cliente"
@@ -340,10 +344,10 @@ export function PostsTable({ posts: postsServer, clientes, filtros, ordem, gerad
           <button
             onClick={sincronizarZernio}
             disabled={sincronizando}
-            title="Puxa o status de cada post do Zernio e atualiza no Notion (Agendado → Publicado etc.). Cron faz isso sozinho a cada 15min."
+            title="Atualiza o status dos posts (Agendado → Publicado etc.). Rodamos isso automaticamente a cada 15min também."
             className="rounded-md border border-bd/15 px-2 py-1 text-fg-muted/80 hover:bg-primary/5 disabled:opacity-60"
           >
-            {sincronizando ? 'Sincronizando…' : '↻ Sync Zernio'}
+            {sincronizando ? 'Sincronizando…' : '↻ Atualizar status'}
           </button>
           <button
             onClick={refrescar}

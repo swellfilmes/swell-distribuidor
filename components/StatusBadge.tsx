@@ -1,3 +1,5 @@
+import { labelDoStatus } from '@/lib-web/notionData';
+
 interface Props {
   status: string;
   className?: string;
@@ -14,14 +16,40 @@ const STATUS_COLORS: Record<string, string> = {
   Falhou: 'bg-error/15 text-error ring-error/30',
 };
 
+/**
+ * Cor pura em hex (sem alpha ring) — usado pela bolinha de status no
+ * calendário. Casa com a mesma paleta do badge acima.
+ */
+export const STATUS_DOT_COLORS: Record<string, string> = {
+  Aguardando: '#F59E0B',
+  Aprovado: '#38BDF8',
+  Rejeitado: '#EF4444',
+  Agendado: '#A78BFA',
+  Publicado: '#22C55E',
+  'Publicado parcial': '#FB923C',
+  'Pendente Zernio': '#94A3B8',
+  Falhou: '#EF4444',
+};
+
 export function StatusBadge({ status, className = '' }: Props) {
   const cls = STATUS_COLORS[status] ?? 'bg-fg-muted/15 text-fg-muted ring-fg-muted/25';
   return (
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${cls} ${className}`}
     >
-      {status}
+      {labelDoStatus(status)}
     </span>
+  );
+}
+
+export function StatusDot({ status, className = '' }: Props) {
+  const cor = STATUS_DOT_COLORS[status] ?? '#94A3B8';
+  return (
+    <span
+      title={labelDoStatus(status)}
+      style={{ backgroundColor: cor }}
+      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${className}`}
+    />
   );
 }
 

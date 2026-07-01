@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { StatusBadge, RedeBadge } from './StatusBadge';
-import type { PostListado } from '@/lib-web/notionData';
+import { StatusBadge, StatusDot, RedeBadge } from './StatusBadge';
+import { labelDoStatus, type PostListado } from '@/lib-web/notionData';
 
 interface Props {
   posts: PostListado[];
@@ -206,6 +206,18 @@ export function CalendarView({
         </p>
       </div>
 
+      {/* Legenda dos status (bolinhas). */}
+      <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-fg-muted">
+        <LegendaStatus status="Aguardando" />
+        <LegendaStatus status="Aprovado" />
+        <LegendaStatus status="Agendado" />
+        <LegendaStatus status="Pendente Zernio" />
+        <LegendaStatus status="Publicado" />
+        <LegendaStatus status="Publicado parcial" />
+        <LegendaStatus status="Falhou" />
+        <LegendaStatus status="Rejeitado" />
+      </div>
+
       <div className="overflow-hidden rounded-lg border border-bd/30 bg-surface">
         <div className="grid grid-cols-7 border-b border-bd/30 bg-surface-2/40 text-center text-xs uppercase tracking-wide text-fg-muted">
           {DIAS_SEMANA.map((d) => (
@@ -261,19 +273,20 @@ export function CalendarView({
                         onDragStart={(e) => handleDragStart(e, p.pageId, iso)}
                         onDragEnd={handleDragEnd}
                         onClick={() => onSelecionar(p)}
-                        title={`${horaCurta(p.dataPublicacao ?? p.publicadoEm)} · ${p.nome}${dragHabilitado ? '\n(arraste pra mover de dia)' : ''}`}
+                        title={`${labelDoStatus(p.status)} · ${horaCurta(p.dataPublicacao ?? p.publicadoEm)} · ${p.nome}${dragHabilitado ? '\n(arraste pra mover de dia)' : ''}`}
                         className={[
-                          'block w-full truncate rounded px-1.5 py-0.5 text-left text-[10px] leading-tight transition cursor-pointer',
+                          'flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[10px] leading-tight transition cursor-pointer',
                           'hover:bg-surface-2',
                           sendoArrastado ? 'opacity-40' : '',
                           pendente ? 'opacity-50' : '',
                           dragHabilitado && !pendente ? 'cursor-grab active:cursor-grabbing' : '',
                         ].join(' ')}
                       >
+                        <StatusDot status={p.status} />
                         <span className="font-medium text-fg-muted">
                           {horaCurta(p.dataPublicacao ?? p.publicadoEm)}
                         </span>{' '}
-                        <span className="text-fg">{p.cliente || p.tipo}</span>
+                        <span className="truncate text-fg">{p.cliente || p.tipo}</span>
                       </div>
                     );
                   })}
@@ -292,6 +305,7 @@ export function CalendarView({
         </div>
       </div>
 
+      {/* placeholder pra popover do dia — segue abaixo */}
       {diaAberto && (
         <div className="fixed inset-0 z-30" onClick={() => setDiaAberto(null)}>
           <div className="absolute inset-0 bg-app/70 backdrop-blur-sm" />
@@ -353,5 +367,14 @@ export function CalendarView({
         </div>
       )}
     </>
+  );
+}
+
+function LegendaStatus({ status }: { status: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <StatusDot status={status} />
+      {labelDoStatus(status)}
+    </span>
   );
 }

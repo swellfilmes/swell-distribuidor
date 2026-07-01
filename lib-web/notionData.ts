@@ -39,6 +39,27 @@ export const TIPO_VALORES: TipoVideo[] = [
 
 export const REDE_VALORES: Rede[] = ['youtube', 'instagram', 'tiktok', 'linkedin'];
 
+/**
+ * Mapa de status interno → label amigável mostrado na UI. Mantemos o nome
+ * interno original ('Pendente Zernio') porque ele já existe como option
+ * no select do Notion de cada tenant — renomear quebraria os dados
+ * históricos. Só o rótulo mostrado ao usuário muda.
+ */
+export const STATUS_LABELS: Record<string, string> = {
+  Aguardando: 'Aguardando aprovação',
+  Aprovado: 'Aprovado',
+  Rejeitado: 'Rejeitado',
+  Agendado: 'Agendado',
+  Publicado: 'Publicado',
+  'Publicado parcial': 'Publicado parcial',
+  'Pendente Zernio': 'Aguardando publicação',
+  Falhou: 'Falhou',
+};
+
+export function labelDoStatus(status: string): string {
+  return STATUS_LABELS[status] ?? status;
+}
+
 export interface PostListado {
   pageId: string;
   notionUrl: string;

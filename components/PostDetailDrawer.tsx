@@ -163,7 +163,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose, onEx
               }
             />
             <p className="mt-2 text-[11px] text-fg-muted">
-              Desmarque pra não publicar. O cron respeita essa lista no momento de enviar pro Zernio.
+              Desmarque pra não publicar em alguma rede. A lista aqui vale na hora de publicar.
             </p>
           </Section>
 
@@ -245,9 +245,9 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose, onEx
                   </a>
                 </li>
               )}
-              {post.zernioPostId && (
+              {post.zernioPostId && !post.zernioPostId.startsWith('PROCESSING-') && (
                 <li className="text-fg-muted/70">
-                  Zernio post id:{' '}
+                  ID de publicação:{' '}
                   <code className="rounded bg-surface px-1 py-0.5 text-xs ring-1 ring-primary/10">
                     {post.zernioPostId}
                   </code>
@@ -267,6 +267,10 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose, onEx
           </Section>
 
           <Section title="Ações">
+            <div className="mb-2 flex items-center gap-2 text-xs text-fg-muted">
+              <span>Status atual:</span>
+              <StatusBadge status={post.status} />
+            </div>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() =>
@@ -275,7 +279,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose, onEx
                 disabled={pendente || post.status === 'Aprovado'}
                 className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-app transition-colors hover:bg-primary/85 disabled:opacity-40"
               >
-                Aprovar
+                {post.status === 'Aprovado' ? '✓ Aprovado' : 'Aprovar'}
               </button>
               <button
                 onClick={() =>
@@ -284,7 +288,7 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose, onEx
                 disabled={pendente || post.status === 'Rejeitado'}
                 className="rounded-lg border border-error/40 bg-error/10 px-3 py-1.5 text-sm font-medium text-error transition-colors hover:bg-error/20 disabled:opacity-40"
               >
-                Rejeitar
+                {post.status === 'Rejeitado' ? '✓ Rejeitado' : 'Rejeitar'}
               </button>
               <button
                 onClick={() =>
@@ -318,8 +322,8 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose, onEx
                   </p>
                   <p className="mt-1 text-xs text-fg-muted">
                     Isso vai:
-                    <br />• Apagar o arquivo do R2 (irreversível)
-                    <br />• Cancelar o agendamento no Zernio se houver
+                    <br />• Apagar o vídeo/imagem do armazenamento (irreversível)
+                    <br />• Cancelar o agendamento nas redes se houver
                     <br />• Arquivar a página no Notion
                     {post.status === 'Publicado' || post.status === 'Publicado parcial' ? (
                       <>

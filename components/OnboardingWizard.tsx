@@ -38,7 +38,7 @@ export function OnboardingWizard(props: Props) {
   const passos = [
     { id: 'boas-vindas', label: 'Bem-vindo', completo: false, ativo: step === 'boas-vindas' },
     { id: 'notion', label: 'Notion', completo: props.notionPronto, ativo: step === 'notion' },
-    { id: 'zernio', label: 'Zernio', completo: props.zernioPronto, ativo: step === 'zernio' },
+    { id: 'zernio', label: 'Redes sociais', completo: props.zernioPronto, ativo: step === 'zernio' },
     { id: 'pronto', label: 'Pronto', completo: props.notionPronto && props.zernioPronto, ativo: step === 'pronto' },
   ];
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { StatusBadge } from './StatusBadge';
-import { STATUS_VALORES } from '@/lib-web/notionData';
+import { STATUS_VALORES, labelDoStatus } from '@/lib-web/notionData';
 
 interface Props {
   valor: string;
@@ -28,7 +28,7 @@ export function InlineStatusEdit({ valor, pendente, onChange }: Props) {
       >
         {STATUS_VALORES.map((s) => (
           <option key={s} value={s}>
-            {s}
+            {labelDoStatus(s)}
           </option>
         ))}
       </select>
