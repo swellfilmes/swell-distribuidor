@@ -31,6 +31,11 @@ const origens = [
   'http://localhost:8080',
   'https://project-42hj6.vercel.app',
   'https://swell-distribuidor-git-main-swell-filmes.vercel.app',
+  // REVISÃO 01 (2026-07-02): domínio oficial de produção estava faltando —
+  // uploads do browser (foto/vídeo/carrossel) batiam em CORS e caíam no
+  // "Erro de rede subindo no R2." do Uploader. Depois do merge, rodar:
+  //   npm run r2:setup-cors
+  'https://swell.mermaid.video',
 ];
 
 async function main() {
