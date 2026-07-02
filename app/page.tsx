@@ -10,7 +10,7 @@ export default async function Home() {
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="max-w-lg space-y-6 text-center">
         <h1 className="text-4xl font-semibold tracking-tight">
-          Swell Distribuidor
+          Swell <span className="text-primary">Mermaid</span>
         </h1>
         <p className="text-base text-fg-muted/70">
           Distribuição social automatizada para clientes da Swell Filmes.
