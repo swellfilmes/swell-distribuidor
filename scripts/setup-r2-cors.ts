@@ -29,6 +29,8 @@ const origens = [
   'http://localhost:3001',
   'http://localhost:4488',
   'http://localhost:8080',
+  'https://swellmermaid.com.br',
+  'https://www.swellmermaid.com.br',
   'https://project-42hj6.vercel.app',
   'https://swell-distribuidor-git-main-swell-filmes.vercel.app',
 ];
