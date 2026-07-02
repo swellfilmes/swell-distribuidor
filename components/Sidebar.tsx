@@ -131,23 +131,11 @@ export function Sidebar({ isAdmin = false }: Props) {
 
 function Logo() {
   return (
-    <span
-      aria-hidden
-      className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="h-4 w-4"
-      >
-        <path d="M3 12c3 0 3-4 6-4s3 4 6 4 3-4 6-4" />
-        <path d="M3 18c3 0 3-4 6-4s3 4 6 4 3-4 6-4" />
-      </svg>
-    </span>
+    <img
+      src="/logo-swell.png"
+      alt="Swell Mermaid"
+      className="h-7 w-7 object-contain"
+    />
   );
 }
 
