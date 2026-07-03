@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/src/db/index';
 import { users } from '@/src/db/schema';
 import { comRetryDb } from '@/src/db/retry';
+import { syncUsuarioAtual } from '@/lib-web/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,16 +27,28 @@ export async function POST() {
   }
 
   const agora = new Date();
-  // Não precisamos garantir que a linha existe — o syncUsuarioAtual() do
-  // layout cria ANTES de qualquer chamada à UI; mas usamos returning pra
-  // detectar a hipótese rara do user nem ter sincronizado ainda.
-  const atualizado = await comRetryDb(() =>
+  // Tenta atualizar direto. Se o usuário ainda não existe (fluxo /convite/*
+  // que não passa pelo layout /app que sincroniza), roda syncUsuarioAtual
+  // pra criar a linha e tenta de novo. Sem isso, primeiro aceite via convite
+  // batia 409 mesmo com o Clerk logado.
+  let atualizado = await comRetryDb(() =>
     db
       .update(users)
       .set({ termosAceitos: agora })
       .where(eq(users.id, userId))
       .returning({ id: users.id, aceitoEm: users.termosAceitos }),
   );
+
+  if (atualizado.length === 0) {
+    await syncUsuarioAtual();
+    atualizado = await comRetryDb(() =>
+      db
+        .update(users)
+        .set({ termosAceitos: agora })
+        .where(eq(users.id, userId))
+        .returning({ id: users.id, aceitoEm: users.termosAceitos }),
+    );
+  }
 
   if (atualizado.length === 0) {
     return NextResponse.json(
