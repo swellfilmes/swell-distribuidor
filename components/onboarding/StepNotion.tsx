@@ -41,32 +41,36 @@ export function StepNotion({ empresaId, notionPronto, notionDbId, onAvancar }: P
       ) : (
         <div className="space-y-4 rounded-xl border border-bd/10 bg-surface p-5">
           <div>
-            <div className="mb-2 text-sm font-medium">O que vai acontecer:</div>
+            <div className="mb-2 text-sm font-medium">Antes de começar:</div>
             <ol className="space-y-1.5 text-xs text-fg-muted/70">
-              <li>1. Clica no botão abaixo</li>
               <li>
-                2. O Notion vai abrir um popup pedindo pra você{' '}
-                <b className="text-fg">selecionar as páginas</b> que essa integração pode acessar
+                1. <b className="text-fg">Abre o Notion em outra aba</b> e cria
+                uma página vazia (pode chamar de "Swell Mermaid", "Marketing" ou
+                qualquer nome). Se já tiver uma página tipo "Conteúdo", pode usar essa.
               </li>
+              <li>2. Volta aqui e clica no botão abaixo</li>
               <li>
-                3. <b className="text-fg">Não precisa criar página antes</b> — no
-                próprio popup do Notion, clique em{' '}
+                3. O Notion vai abrir um popup mostrando as permissões → clica em{' '}
                 <span className="inline-block rounded bg-fg-muted/15 px-1.5 py-0.5 font-medium text-fg">
-                  + Add page
-                </span>{' '}
-                lá em cima pra criar uma página vazia na hora
+                  Selecionar páginas
+                </span>
               </li>
               <li>
-                4. Confirma e volta pra cá — a gente cria a database{' '}
+                4. Marca a página que você criou no passo 1 → clica em{' '}
+                <span className="inline-block rounded bg-fg-muted/15 px-1.5 py-0.5 font-medium text-fg">
+                  Permitir acesso
+                </span>
+              </li>
+              <li>
+                5. Volta pra cá — a gente cria a database{' '}
                 <b className="text-fg">automaticamente</b> dentro da página escolhida
               </li>
             </ol>
           </div>
 
           <div className="rounded-lg border border-primary/25 bg-primary/[0.05] p-3 text-[11px] text-fg-muted">
-            💡 Dica: se você <b className="text-fg">já</b> tem uma página tipo "Marketing" ou
-            "Conteúdo" no seu workspace, dá pra selecionar ela também — a database vira uma
-            sub-página lá dentro.
+            💡 A database dos posts vai virar uma sub-página dentro da página
+            que você escolher. Você pode mover ela pra outro lugar depois se quiser.
           </div>
 
           <a
