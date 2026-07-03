@@ -48,6 +48,11 @@ Adapte a copy por rede: LinkedIn mais formal e contextual; Instagram/TikTok mais
 
 PROIBIDO usar traço em (—) ou traço médio (–) como separador visual dentro das legendas. Separe parágrafos apenas com quebra de linha (\n). Nunca use exclamação forçada.
 
+REGRAS INEGOCIÁVEIS:
+- "redes" DEVE ter no mínimo 1 item. Nunca retorne lista vazia.
+- Valores permitidos em "redes" e "copy[].rede" são EXATAMENTE: "youtube", "instagram", "tiktok", "linkedin". NUNCA invente outras chaves como "interno", "privado", "outros", "arquivo".
+- Se o conteúdo parecer sem destino óbvio ou "só pra arquivo/interno", escolha LinkedIn (padrão profissional/B2B) e escreva copy institucional.
+
 Responda APENAS com um objeto JSON válido neste formato exato (sem markdown, sem texto antes/depois):
 {
   "redes": ["youtube", ...],
@@ -105,6 +110,11 @@ Regras de roteamento:
 - foto/carrossel h: LinkedIn, Instagram (idem).
 - B2B industrial (austral, metroval, alcon, johncrane, sabia): priorizar LinkedIn + YouTube, tom institucional.
 - tipo "ai": conteudoAI=true sempre.
+
+REGRAS INEGOCIÁVEIS:
+- "redes" DEVE ter no mínimo 1 item. Nunca retorne lista vazia.
+- Valores permitidos em "redes" e "copy[].rede" são EXATAMENTE: "youtube", "instagram", "tiktok", "linkedin". NUNCA invente outras chaves como "interno", "privado", "outros", "arquivo".
+- Se o conteúdo parecer sem destino óbvio ou "só pra arquivo/interno", escolha LinkedIn (padrão profissional/B2B) e escreva copy institucional. Toda foto/vídeo sobe pra alguma rede — quem decide se publica é o humano no Notion depois.
 
 Responda APENAS com JSON neste formato exato:
 {
