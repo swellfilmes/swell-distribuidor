@@ -258,7 +258,7 @@ export async function publicarTudo(
 
     const resposta = await comTimeoutERetry(
       () => zernio.posts.createPost({ body: body as never }),
-      { nome: 'Zernio.createPost', timeoutMs: 60_000 },
+      { nome: 'Zernio.createPost', timeoutMs: 180_000, tentativas: 1 },
     );
 
     const dataCreate = (resposta as { data?: { post?: { _id?: string } } }).data;
