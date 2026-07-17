@@ -126,6 +126,26 @@ export function PostDetailDrawer({ post, pendente, erro, onSalvar, onClose, onEx
             );
           })()}
 
+          {post.tipo === 'carrossel' &&
+            post.videoUrl &&
+            post.plano &&
+            (post.plano.mediasExtras?.length ?? 0) > 0 && (
+              <Section title="Ordem do carrossel">
+                <CarrosselOrdemEditor
+                  pageId={post.pageId}
+                  primariaUrl={post.videoUrl}
+                  extras={post.plano.mediasExtras ?? []}
+                  pendente={pendente}
+                  onSucesso={(novaPrimariaUrl, novoPlano) => {
+                    onSalvar(
+                      {},
+                      { plano: novoPlano, videoUrl: novaPrimariaUrl },
+                    );
+                  }}
+                />
+              </Section>
+            )}
+
           <Section title="Resumo">
             <p className="text-sm text-fg-muted/80">{post.resumo || '—'}</p>
           </Section>
@@ -552,6 +572,172 @@ function CopyRedeEditor({
           )}
         </>
       )}
+    </div>
+  );
+}
+
+function CarrosselOrdemEditor({
+  pageId,
+  primariaUrl,
+  extras,
+  pendente,
+  onSucesso,
+}: {
+  pageId: string;
+  primariaUrl: string;
+  extras: Array<{ urlPublica: string; chaveR2: string }>;
+  pendente: boolean;
+  onSucesso: (
+    novaPrimariaUrl: string,
+    novoPlano: import('@/src/types').PlanoPublicacao,
+  ) => void;
+}) {
+  const urlsIniciais = [primariaUrl, ...extras.map((e) => e.urlPublica)];
+  const [ordem, setOrdem] = useState<string[]>(urlsIniciais);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [okMsg, setOkMsg] = useState<string | null>(null);
+
+  // Se o post trocou (drawer reabriu em outro item), reseta.
+  useEffect(() => {
+    setOrdem([primariaUrl, ...extras.map((e) => e.urlPublica)]);
+    setErro(null);
+    setOkMsg(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageId]);
+
+  const sujo =
+    ordem.length !== urlsIniciais.length ||
+    ordem.some((u, i) => u !== urlsIniciais[i]);
+
+  function mover(i: number, delta: -1 | 1) {
+    const j = i + delta;
+    if (j < 0 || j >= ordem.length) return;
+    const nova = ordem.slice();
+    [nova[i], nova[j]] = [nova[j], nova[i]];
+    setOrdem(nova);
+    setOkMsg(null);
+  }
+
+  function resetar() {
+    setOrdem(urlsIniciais);
+    setErro(null);
+    setOkMsg(null);
+  }
+
+  async function salvar() {
+    setSalvando(true);
+    setErro(null);
+    setOkMsg(null);
+    try {
+      const resp = await fetch(`/api/posts/${pageId}/carrossel-ordem`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ordem }),
+      });
+      const data = (await resp.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        plano?: import('@/src/types').PlanoPublicacao;
+        videoUrl?: string;
+      };
+      if (!resp.ok || data.error || !data.plano || !data.videoUrl) {
+        throw new Error(data.error ?? `HTTP ${resp.status}`);
+      }
+      onSucesso(data.videoUrl, data.plano);
+      setOkMsg('Ordem salva. A capa do carrossel agora é a imagem 1.');
+      setTimeout(() => setOkMsg(null), 5000);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-bd/10 bg-surface p-3">
+      <p className="mb-3 text-xs text-fg-muted">
+        Arraste com as setas ↑ ↓ pra reordenar. A imagem <strong>1</strong> é a
+        capa que aparece no feed.
+      </p>
+      <ul className="space-y-2">
+        {ordem.map((url, i) => (
+          <li
+            key={url}
+            className="flex items-center gap-3 rounded-md border border-bd/10 bg-surface-2/40 p-2"
+          >
+            <span
+              className={[
+                'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                i === 0
+                  ? 'bg-primary/20 text-primary ring-1 ring-primary/40'
+                  : 'bg-surface text-fg-muted ring-1 ring-bd/20',
+              ].join(' ')}
+              title={i === 0 ? 'Capa do carrossel' : `Posição ${i + 1}`}
+            >
+              {i + 1}
+            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt={`Item ${i + 1} do carrossel`}
+              className="h-14 w-14 shrink-0 rounded object-cover ring-1 ring-bd/10"
+            />
+            <div className="min-w-0 flex-1 text-[11px] text-fg-muted/60">
+              <div className="truncate" title={url}>
+                {url.split('/').pop()}
+              </div>
+              {i === 0 && (
+                <div className="mt-0.5 font-medium text-primary/80">
+                  ← capa
+                </div>
+              )}
+            </div>
+            <div className="flex shrink-0 flex-col gap-1">
+              <button
+                type="button"
+                onClick={() => mover(i, -1)}
+                disabled={pendente || salvando || i === 0}
+                aria-label="Subir"
+                className="rounded border border-bd/30 bg-surface px-2 py-0.5 text-sm leading-none text-fg-muted hover:border-primary/40 hover:text-fg disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                onClick={() => mover(i, 1)}
+                disabled={pendente || salvando || i === ordem.length - 1}
+                aria-label="Descer"
+                className="rounded border border-bd/30 bg-surface px-2 py-0.5 text-sm leading-none text-fg-muted hover:border-primary/40 hover:text-fg disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                ↓
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {erro && <p className="mt-2 text-xs text-error">Erro: {erro}</p>}
+      {okMsg && !erro && <p className="mt-2 text-xs text-success">{okMsg}</p>}
+
+      <div className="mt-3 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={resetar}
+          disabled={pendente || salvando || !sujo}
+          className="rounded-md px-3 py-1 text-xs text-fg-muted hover:bg-surface-2 hover:text-fg disabled:opacity-40"
+        >
+          desfazer
+        </button>
+        <button
+          type="button"
+          onClick={salvar}
+          disabled={pendente || salvando || !sujo}
+          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-app transition-colors hover:bg-primary/85 disabled:opacity-40"
+        >
+          {salvando ? 'salvando…' : 'Salvar ordem'}
+        </button>
+      </div>
     </div>
   );
 }
