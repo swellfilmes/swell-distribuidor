@@ -90,9 +90,9 @@ export function EmpresaForm({ modo, inicial, empresaId }: Props) {
           body: JSON.stringify({
             nome: v.nome,
             slug: v.slug,
-            notionApiKey: v.notionApiKey,
-            notionDbId: v.notionDbId,
-            zernioApiKey: v.zernioApiKey,
+            notionApiKey: v.notionApiKey || undefined,
+            notionDbId: v.notionDbId || undefined,
+            zernioApiKey: v.zernioApiKey || undefined,
             zernioYoutubeAccountId: v.zernioYoutubeAccountId || undefined,
             zernioInstagramAccountId: v.zernioInstagramAccountId || undefined,
             zernioTiktokAccountId: v.zernioTiktokAccountId || undefined,
@@ -286,7 +286,7 @@ export function EmpresaForm({ modo, inicial, empresaId }: Props) {
         </button>
         <button
           onClick={salvar}
-          disabled={salvando || !v.nome || !v.slug || !v.notionApiKey || !v.notionDbId || !v.zernioApiKey}
+          disabled={salvando || !v.nome || !v.slug}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-app hover:opacity-90 disabled:opacity-40"
         >
           {salvando ? 'Salvando…' : modo === 'criar' ? 'Criar empresa' : 'Salvar alterações'}
