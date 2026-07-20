@@ -19,16 +19,40 @@ interface Convite {
 
 interface Props {
   empresaId: number;
+  empresaNome: string;
   membros: Membro[];
   convites: Convite[];
 }
 
-export function MembrosManager({ empresaId, membros, convites }: Props) {
+export function MembrosManager({ empresaId, empresaNome, membros, convites }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'owner' | 'editor'>('editor');
   const [pending, setPending] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
+  const [copiadoId, setCopiadoId] = useState<number | null>(null);
+
+  function montarTextoConvite(convite: Convite): string {
+    const base =
+      typeof window !== 'undefined' ? window.location.origin : 'https://swellmermaid.com.br';
+    return (
+      `Você foi convidado pra usar o Swell Mermaid (${empresaNome}).\n\n` +
+      `Crie sua conta aqui: ${base}/sign-up\n\n` +
+      `Importante: use este email exato → ${convite.email}\n` +
+      `Assim que você logar pela primeira vez, entra automaticamente na empresa.`
+    );
+  }
+
+  async function copiarConvite(convite: Convite) {
+    try {
+      await navigator.clipboard.writeText(montarTextoConvite(convite));
+      setCopiadoId(convite.id);
+      setTimeout(() => setCopiadoId((atual) => (atual === convite.id ? null : atual)), 2500);
+    } catch {
+      // Fallback silencioso: se clipboard bloquear, o usuário vê o texto no prompt.
+      window.prompt('Copie manualmente:', montarTextoConvite(convite));
+    }
+  }
 
   async function convidar() {
     setPending(true);
@@ -160,19 +184,27 @@ export function MembrosManager({ empresaId, membros, convites }: Props) {
         ) : (
           <ul className="divide-y divide-ink/5">
             {convites.map((c) => (
-              <li key={c.id} className="flex items-center justify-between py-2 text-sm">
-                <div>
-                  <p className="font-medium">{c.email}</p>
+              <li key={c.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{c.email}</p>
                   <p className="text-xs text-fg-muted/55">
                     Vai virar <strong>{c.role}</strong> quando logar
                   </p>
                 </div>
-                <button
-                  onClick={() => cancelar(c.id)}
-                  className="text-xs text-fg-muted/60 hover:underline"
-                >
-                  cancelar
-                </button>
+                <div className="flex shrink-0 items-center gap-3">
+                  <button
+                    onClick={() => copiarConvite(c)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {copiadoId === c.id ? '✓ copiado' : 'copiar link'}
+                  </button>
+                  <button
+                    onClick={() => cancelar(c.id)}
+                    className="text-xs text-fg-muted/60 hover:underline"
+                  >
+                    cancelar
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

@@ -74,6 +74,7 @@ export default async function EmpresaDetalhe({ params }: Props) {
         <h2 className="mb-3 text-base font-medium">Membros & convites</h2>
         <MembrosManager
           empresaId={empresa.id}
+          empresaNome={empresa.nome}
           membros={empresa.membros}
           convites={empresa.convitesPendentes.map((c) => ({
             id: c.id,
