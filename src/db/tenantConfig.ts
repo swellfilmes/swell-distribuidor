@@ -5,12 +5,21 @@ import { decifrar } from './encryption';
 import { comRetryDb } from './retry';
 import type { TenantConfig } from '../config';
 
-const cache = new Map<string, TenantConfig>();
+// TTL curto porque em Vercel serverless o cache é per-instance: quando o OAuth
+// grava novas chaves numa instância, as outras continuam servindo cache velho
+// até o TTL expirar. 30s é curto o bastante pra onboarding não travar em
+// "Notion não conectado" e longo pra amortizar leituras dentro de uma sessão.
+const CACHE_TTL_MS = 30_000;
+interface CacheEntry {
+  cfg: TenantConfig;
+  expiresAt: number;
+}
+const cache = new Map<string, CacheEntry>();
 
-/** Carrega config de uma empresa pelo slug (ex: 'swell'). Faz cache em memória. */
+/** Carrega config de uma empresa pelo slug (ex: 'swell'). Faz cache em memória com TTL de 30s. */
 export async function loadTenantConfig(slug: string): Promise<TenantConfig> {
   const hit = cache.get(slug);
-  if (hit) return hit;
+  if (hit && hit.expiresAt > Date.now()) return hit.cfg;
 
   const linhas = await comRetryDb(() =>
     db
@@ -47,7 +56,7 @@ export async function loadTenantConfig(slug: string): Promise<TenantConfig> {
     tomVoz: e.tomVoz ?? undefined,
   };
 
-  cache.set(slug, cfg);
+  cache.set(slug, { cfg, expiresAt: Date.now() + CACHE_TTL_MS });
   return cfg;
 }
 
